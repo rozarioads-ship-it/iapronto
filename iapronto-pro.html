@@ -1,0 +1,1415 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IApronto Pro — Gerador de Prompts com IA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08080F;
+  --surface:#10101A;
+  --surface2:#161624;
+  --surface3:#1E1E30;
+  --border:#22223A;
+  --border2:#2E2E4A;
+  --accent:#8B7FFF;
+  --accent2:#FF7BAE;
+  --accent3:#7BFFD4;
+  --glow:rgba(139,127,255,0.2);
+  --glow2:rgba(255,123,174,0.15);
+  --text:#EEEEFF;
+  --muted:#7878A0;
+  --muted2:#4A4A68;
+  --success:#2ECC8A;
+  --warn:#FFB84C;
+  --r:14px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* ambient glow bg */
+body::before{content:'';position:fixed;top:-20%;left:-10%;width:50%;height:50%;background:radial-gradient(ellipse,rgba(139,127,255,0.06) 0%,transparent 70%);pointer-events:none;z-index:0}
+body::after{content:'';position:fixed;bottom:-20%;right:-10%;width:50%;height:50%;background:radial-gradient(ellipse,rgba(255,123,174,0.05) 0%,transparent 70%);pointer-events:none;z-index:0}
+
+.wrap{max-width:780px;margin:0 auto;padding:0 1.25rem 5rem;position:relative;z-index:1}
+
+/* HEADER */
+.header{padding:3.5rem 0 2.5rem;text-align:center;position:relative}
+.pro-badge{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,rgba(139,127,255,0.15),rgba(255,123,174,0.1));border:1px solid rgba(139,127,255,0.4);border-radius:50px;padding:.5rem 1.25rem;margin-bottom:1.5rem;font-family:'Syne',sans-serif;font-size:11px;font-weight:800;letter-spacing:3px;color:var(--accent)}
+.pro-star{color:var(--accent2);font-size:14px}
+.header h1{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,5vw,2.7rem);font-weight:800;line-height:1.12;margin-bottom:.75rem;letter-spacing:-0.02em}
+.grad{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.header-sub{font-size:15px;color:var(--muted);max-width:500px;margin:0 auto 1.5rem;line-height:1.7}
+.header-pills{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.hpill{display:inline-flex;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border2);border-radius:50px;padding:.3rem .85rem;font-size:12px;font-weight:500;color:var(--muted)}
+.hpill .dot{width:6px;height:6px;border-radius:50%}
+
+/* NAV */
+.nav{display:flex;gap:3px;margin:2rem 0 1.75rem;background:var(--surface);border:1px solid var(--border);border-radius:50px;padding:5px}
+.nav-btn{flex:1;padding:.65rem .4rem;border:none;background:transparent;border-radius:40px;font-family:'Syne',sans-serif;font-size:11px;font-weight:800;cursor:pointer;color:var(--muted);transition:all .25s;letter-spacing:.5px;white-space:nowrap}
+.nav-btn.active{background:var(--accent);color:#fff;box-shadow:0 2px 20px rgba(139,127,255,0.45)}
+
+.section{display:none;animation:fadeUp .3s ease}
+.section.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* STEP TRACK */
+.step-track{display:flex;align-items:center;gap:0;margin-bottom:2rem}
+.step-dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;flex-shrink:0;transition:all .3s}
+.step-dot.done{background:var(--success);color:#08080F}
+.step-dot.active{background:var(--accent);color:#fff;box-shadow:0 0 20px rgba(139,127,255,0.55)}
+.step-dot.pending{background:var(--surface2);color:var(--muted2);border:1px solid var(--border)}
+.step-line{flex:1;height:2px;background:var(--border);transition:background .3s}
+.step-line.done{background:var(--success)}
+
+.step-panel{display:none}
+.step-panel.active{display:block;animation:fadeUp .3s ease}
+.step-eyebrow{font-family:'Syne',sans-serif;font-size:10px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:.4rem}
+.step-title{font-family:'Syne',sans-serif;font-size:1.3rem;font-weight:800;margin-bottom:.35rem}
+.step-desc{font-size:14px;color:var(--muted);margin-bottom:1.5rem;line-height:1.6}
+
+/* CHIPS */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1.5rem}
+.chip{padding:.55rem 1.1rem;border-radius:50px;border:1px solid var(--border2);background:var(--surface2);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;color:var(--muted)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.sel{background:rgba(139,127,255,0.15);border-color:var(--accent);color:var(--accent)}
+
+/* INPUTS */
+.fl{display:block;font-family:'Syne',sans-serif;font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem}
+.fh{font-size:12px;color:var(--muted2);margin-bottom:.65rem;line-height:1.5}
+textarea,input[type=text]{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;padding:.75rem 1rem;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);outline:none;transition:border .2s;resize:vertical}
+textarea:focus,input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--glow)}
+textarea{min-height:88px}
+.sp{height:1rem}
+
+/* BUTTONS */
+.btn{padding:.75rem 1.5rem;border-radius:50px;border:none;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;cursor:pointer;transition:all .2s;letter-spacing:.8px;display:inline-flex;align-items:center;gap:6px}
+.btn-p{background:var(--accent);color:#fff;box-shadow:0 4px 18px rgba(139,127,255,0.35)}
+.btn-p:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(139,127,255,0.5)}
+.btn-p:disabled{opacity:.5;transform:none;cursor:not-allowed}
+.btn-g{background:transparent;color:var(--muted);border:1px solid var(--border2)}
+.btn-g:hover{color:var(--text);border-color:var(--border2)}
+.btn-ai{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 20px rgba(139,127,255,0.4)}
+.btn-ai:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(139,127,255,0.55)}
+.btn-ai:disabled{opacity:.5;transform:none;cursor:not-allowed}
+.btn-sm{padding:.5rem 1rem;font-size:11px}
+.btn-row{display:flex;gap:10px;margin-top:1.5rem;flex-wrap:wrap;align-items:center}
+
+/* RESULT */
+.rbox{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:1.25rem;margin-top:1.25rem;position:relative}
+.rbox.pro-result{border-color:rgba(139,127,255,0.4);background:linear-gradient(135deg,rgba(139,127,255,0.07),rgba(255,123,174,0.04))}
+.reyebrow{font-family:'Syne',sans-serif;font-size:10px;font-weight:800;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:.75rem}
+.reyebrow.ai{color:var(--accent2)}
+.ptext{font-size:14px;line-height:1.85;color:var(--text);white-space:pre-wrap;min-height:60px}
+.cbtn{position:absolute;top:1rem;right:1rem;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:.35rem .75rem;font-size:10px;font-weight:800;color:var(--accent);cursor:pointer;font-family:'Syne',sans-serif;letter-spacing:1px;transition:all .2s}
+.cbtn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* THINKING */
+.thinking{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:13px;padding:.75rem 0}
+.tbar{display:flex;gap:4px}
+.tbar span{width:6px;height:6px;border-radius:50%;background:var(--accent);display:inline-block;animation:tpulse 1.2s infinite}
+.tbar span:nth-child(2){animation-delay:.15s}
+.tbar span:nth-child(3){animation-delay:.3s}
+@keyframes tpulse{0%,80%,100%{opacity:.2;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+
+/* BIBLIOTECA */
+.cat-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.5rem}
+.cpill{padding:.4rem .9rem;border-radius:50px;border:1px solid var(--border2);background:transparent;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);transition:all .2s;font-family:'Syne',sans-serif}
+.cpill.active{background:rgba(139,127,255,0.15);border-color:var(--accent);color:var(--accent)}
+.p-grid{display:grid;gap:8px}
+.pitem{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem 1.1rem;cursor:pointer;transition:all .2s}
+.pitem:hover{border-color:var(--border2);transform:translateY(-1px)}
+.pitem.open{border-color:var(--accent);background:var(--surface2)}
+.phead{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:.3rem}
+.pname{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
+.pcat{font-size:10px;font-weight:800;letter-spacing:1px;padding:.2rem .6rem;border-radius:50px;background:rgba(139,127,255,0.12);color:var(--accent);white-space:nowrap;font-family:'Syne',sans-serif}
+.pprev{font-size:13px;color:var(--muted);line-height:1.5}
+.pfull{font-size:13px;line-height:1.85;color:var(--text);margin-top:.85rem;padding-top:.85rem;border-top:1px solid var(--border);display:none}
+.pitem.open .pfull{display:block}
+.pact{display:flex;gap:8px;margin-top:.85rem;flex-wrap:wrap}
+
+/* IA TAB */
+.ia-hero{background:linear-gradient(135deg,rgba(139,127,255,0.1),rgba(255,123,174,0.07));border:1px solid rgba(139,127,255,0.3);border-radius:var(--r);padding:1.5rem;margin-bottom:1.5rem;text-align:center}
+.ia-title{font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:.4rem}
+.ia-desc{font-size:14px;color:var(--muted);line-height:1.6;max-width:460px;margin:0 auto}
+
+/* REFINADOR */
+.ref-box{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.25rem;margin-top:1.25rem}
+.ref-title{font-family:'Syne',sans-serif;font-size:12px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--accent3);margin-bottom:.75rem}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--border);margin:1.5rem 0}
+
+/* FOOTER */
+.footer{text-align:center;padding:2.5rem 0 0;border-top:1px solid var(--border);margin-top:3rem}
+.footer-logo{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;letter-spacing:3px;margin-bottom:.35rem;background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.footer-text{font-size:12px;color:var(--muted2)}
+
+/* TOAST */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(20px);background:var(--success);color:#08080F;padding:.65rem 1.5rem;border-radius:50px;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;letter-spacing:1px;opacity:0;transition:all .3s;z-index:999;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+.tag-pro{display:inline-flex;align-items:center;gap:4px;background:linear-gradient(135deg,rgba(139,127,255,0.2),rgba(255,123,174,0.15));border:1px solid rgba(139,127,255,0.4);border-radius:50px;padding:.2rem .65rem;font-size:10px;font-weight:800;color:var(--accent);font-family:'Syne',sans-serif;letter-spacing:1px;vertical-align:middle;margin-left:6px}
+
+/* STATUS IA */
+.ia-status{display:inline-flex;align-items:center;gap:6px;padding:.3rem .85rem;border-radius:50px;font-size:11px;font-weight:700;font-family:'Syne',sans-serif;letter-spacing:1px;margin-top:.75rem;border:1px solid}
+.ia-status.online{background:rgba(46,204,138,0.1);border-color:rgba(46,204,138,0.3);color:var(--success)}
+.ia-status.offline{background:rgba(255,180,76,0.1);border-color:rgba(255,180,76,0.3);color:var(--warn)}
+.ia-status-dot{width:6px;height:6px;border-radius:50%;animation:tpulse 1.5s infinite}
+.ia-status.online .ia-status-dot{background:var(--success)}
+.ia-status.offline .ia-status-dot{background:var(--warn);animation:none}
+
+/* UPSELL CONTEXTUAL */
+.upsell-banner{background:linear-gradient(135deg,rgba(139,127,255,0.12),rgba(255,123,174,0.08));border:1px solid rgba(139,127,255,0.35);border-radius:var(--r);padding:1.25rem;margin-top:1.25rem;display:flex;gap:1rem;align-items:center;flex-wrap:wrap}
+.upsell-text{flex:1;min-width:200px}
+.upsell-text strong{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;display:block;margin-bottom:.25rem}
+.upsell-text span{font-size:12px;color:var(--muted);line-height:1.5}
+.btn-upsell{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;padding:.6rem 1.25rem;border-radius:50px;font-family:'Syne',sans-serif;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;letter-spacing:.5px;box-shadow:0 4px 14px rgba(139,127,255,0.4);transition:all .2s;flex-shrink:0}
+.btn-upsell:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(139,127,255,0.5)}
+
+/* HISTÓRICO */
+.hist-empty{text-align:center;padding:3rem 1rem;color:var(--muted);font-size:14px}
+.hist-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.9rem 1.1rem;margin-bottom:8px;cursor:pointer;transition:all .2s;position:relative}
+.hist-item:hover{border-color:var(--border2)}
+.hist-item.open{border-color:var(--accent);background:var(--surface2)}
+.hist-meta{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:.3rem}
+.hist-tag{font-size:10px;font-weight:800;letter-spacing:1px;padding:.2rem .6rem;border-radius:50px;font-family:'Syne',sans-serif}
+.hist-tag.gerador{background:rgba(139,127,255,0.12);color:var(--accent)}
+.hist-tag.ia{background:rgba(255,123,174,0.12);color:var(--accent2)}
+.hist-tag.arquivo{background:rgba(123,255,212,0.1);color:var(--accent3)}
+.hist-date{font-size:11px;color:var(--muted2)}
+.hist-preview{font-size:13px;color:var(--muted);line-height:1.5;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-full{font-size:13px;line-height:1.85;color:var(--text);margin-top:.75rem;padding-top:.75rem;border-top:1px solid var(--border);display:none;white-space:pre-wrap}
+.hist-item.open .hist-full{display:block}
+.hist-del{position:absolute;top:.85rem;right:.85rem;background:transparent;border:none;color:var(--muted2);cursor:pointer;font-size:14px;padding:.2rem .4rem;border-radius:6px;transition:all .2s}
+.hist-del:hover{background:rgba(226,75,74,0.15);color:#E24B4A}
+.hist-actions{display:flex;gap:8px;margin-top:.75rem}
+
+/* ANTES/DEPOIS */
+.compare-wrap{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:1.5rem}
+.compare-box{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:1rem}
+.compare-label{font-family:'Syne',sans-serif;font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;margin-bottom:.6rem}
+.compare-label.before{color:var(--muted)}
+.compare-label.after{color:var(--accent)}
+.compare-text{font-size:13px;line-height:1.7;color:var(--muted)}
+.compare-text.after{color:var(--text)}
+@media(max-width:500px){.compare-wrap{grid-template-columns:1fr}}
+
+/* NICHO SELECTOR */
+.nicho-wrap{background:linear-gradient(135deg,rgba(139,127,255,0.08),rgba(255,123,174,0.05));border:1px solid rgba(139,127,255,0.25);border-radius:var(--r);padding:1.1rem 1.25rem;margin-bottom:1.5rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap}
+.nicho-label{font-family:'Syne',sans-serif;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--accent);white-space:nowrap}
+.nicho-chips{display:flex;gap:6px;flex-wrap:wrap;flex:1}
+.nicho-chip{padding:.35rem .85rem;border-radius:50px;border:1px solid var(--border2);background:var(--surface2);font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;color:var(--muted);font-family:'Syne',sans-serif}
+.nicho-chip:hover{border-color:var(--accent);color:var(--accent)}
+.nicho-chip.sel{background:rgba(139,127,255,0.18);border-color:var(--accent);color:var(--accent)}
+/* EXPLICAÇÃO DO PROMPT */
+.expl-box{background:var(--surface2);border:1px dashed rgba(139,127,255,0.35);border-radius:var(--r);padding:1.1rem 1.25rem;margin-top:.75rem;animation:fadeUp .3s ease}
+.expl-title{font-family:'Syne',sans-serif;font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--accent3);margin-bottom:.6rem}
+.expl-list{list-style:none;display:grid;gap:.5rem}
+.expl-list li{font-size:13px;color:var(--muted);line-height:1.6;padding-left:1.2rem;position:relative}
+.expl-list li::before{content:'→';position:absolute;left:0;color:var(--accent);font-size:11px;top:.05rem}
+/* VARIAÇÕES */
+.var-grid{display:grid;gap:8px;margin-top:.75rem}
+.var-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:.9rem 1.1rem;position:relative}
+.var-label{font-family:'Syne',sans-serif;font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--accent2);margin-bottom:.5rem}
+.var-text{font-size:13px;line-height:1.75;color:var(--text);white-space:pre-wrap}
+
+/* CANVAS PARTÍCULAS */
+#particle-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.55}
+
+/* DASHBOARD */
+.dashboard{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.25rem;background:var(--surface);border:1px solid var(--border);border-radius:50px;padding:8px 14px;align-items:center}
+.dash-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);font-family:'Syne',sans-serif;font-weight:600;white-space:nowrap}
+.dash-item .dval{color:var(--text);font-weight:800}
+.dash-sep{width:1px;height:12px;background:var(--border2);flex-shrink:0}
+.dash-nicho-tag{background:rgba(139,127,255,0.15);border:1px solid rgba(139,127,255,0.3);border-radius:50px;padding:.15rem .6rem;font-size:10px;font-weight:800;color:var(--accent);font-family:'Syne',sans-serif;cursor:pointer}
+
+/* TYPEWRITER */
+@keyframes typewriter{from{width:0}to{width:100%}}
+@keyframes blink-caret{0%,100%{border-color:transparent}50%{border-color:var(--accent)}}
+.typing-wrap{overflow:hidden}
+.typing-text{display:inline-block;white-space:pre-wrap;word-break:break-word;border-right:2px solid var(--accent);animation:blink-caret .75s step-end 8 forwards;line-height:1.85;font-size:14px;color:var(--text)}
+
+/* TEMAS */
+body.tema-verde{--accent:#22C55E;--accent2:#86EFAC;--accent3:#4ADE80;--glow:rgba(34,197,94,0.2)}
+body.tema-ambar{--accent:#F59E0B;--accent2:#FCD34D;--accent3:#FDE68A;--glow:rgba(245,158,11,0.2)}
+body.tema-light{--bg:#F8F7FF;--surface:#FFFFFF;--surface2:#F0EEFF;--surface3:#E8E4FF;--border:#DDD9FF;--border2:#C4BEFF;--text:#1A1A2E;--muted:#6B6B8A;--muted2:#9B9BB8}
+.theme-bar{display:flex;gap:6px;align-items:center;margin-bottom:1.5rem;flex-wrap:wrap}
+.theme-label{font-family:'Syne',sans-serif;font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted);margin-right:4px}
+.theme-dot{width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all .2s;flex-shrink:0}
+.theme-dot:hover,.theme-dot.active{border-color:var(--text);transform:scale(1.15)}
+
+/* SCORE DE QUALIDADE */
+.score-wrap{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:1.1rem 1.25rem;margin-top:.75rem;animation:fadeUp .3s ease}
+.score-title{font-family:'Syne',sans-serif;font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--warn);margin-bottom:.85rem}
+.score-items{display:grid;gap:8px}
+.score-row{display:flex;align-items:center;gap:10px}
+.score-name{font-size:12px;color:var(--muted);min-width:90px;font-family:'Syne',sans-serif;font-weight:600}
+.score-bar-wrap{flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden}
+.score-bar{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+.score-pct{font-size:11px;font-weight:800;font-family:'Syne',sans-serif;min-width:32px;text-align:right}
+.score-total{margin-top:.85rem;padding-top:.75rem;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px}
+.score-total-num{font-family:'Syne',sans-serif;font-size:1.4rem;font-weight:800}
+.score-total-label{font-size:12px;color:var(--muted)}
+
+/* MODO CHAT */
+.chat-wrap{display:flex;flex-direction:column;gap:8px;min-height:300px;max-height:420px;overflow-y:auto;padding:4px 0;margin-bottom:1rem}
+.chat-msg{padding:.75rem 1rem;border-radius:12px;font-size:14px;line-height:1.65;max-width:88%;animation:fadeUp .2s ease}
+.chat-msg.ia{background:var(--surface2);border:1px solid var(--border2);align-self:flex-start;border-bottom-left-radius:4px}
+.chat-msg.user{background:rgba(139,127,255,0.15);border:1px solid rgba(139,127,255,0.3);align-self:flex-end;border-bottom-right-radius:4px;color:var(--text)}
+.chat-input-row{display:flex;gap:8px}
+.chat-input-row textarea{flex:1;min-height:52px;max-height:120px;border-radius:12px}
+.chat-result{background:linear-gradient(135deg,rgba(139,127,255,0.08),rgba(255,123,174,0.05));border:1px solid rgba(139,127,255,0.3);border-radius:var(--r);padding:1.25rem;margin-top:1rem;position:relative}
+
+/* FAVORITOS */
+.fav-btn{background:transparent;border:none;cursor:pointer;font-size:16px;padding:.2rem .3rem;border-radius:6px;transition:all .2s;line-height:1;flex-shrink:0}
+.fav-btn:hover{transform:scale(1.2)}
+.fav-empty{text-align:center;padding:3rem 1rem;color:var(--muted);font-size:14px}
+
+@media(max-width:500px){
+  .header h1{font-size:1.65rem}
+  .nav-btn{font-size:10px;padding:.55rem .3rem}
+  .header-pills{display:none}
+  .dashboard{border-radius:var(--r);flex-direction:column;align-items:flex-start}
+  .dash-sep{display:none}
+}
+</style>
+</head>
+<body>
+
+<canvas id="particle-canvas"></canvas>
+
+<div class="wrap">
+
+  <!-- DASHBOARD -->
+  <div class="dashboard" id="dashboard">
+    <div class="dash-item">🎯 <span class="dval" id="d-total">0</span> prompts gerados</div>
+    <div class="dash-sep"></div>
+    <div class="dash-item">🕓 <span class="dval" id="d-hist">0</span> salvos</div>
+    <div class="dash-sep"></div>
+    <div class="dash-item">🏪 <span id="d-nicho" class="dash-nicho-tag" onclick="document.getElementById('nicho-wrap').scrollIntoView({behavior:'smooth'})">sem nicho</span></div>
+    <div class="dash-sep"></div>
+    <div class="dash-item" id="d-status-mini"><span style="width:6px;height:6px;border-radius:50%;background:var(--success);display:inline-block"></span> IA online</div>
+  </div>
+
+  <div class="header">
+    <div class="pro-badge"><span class="pro-star">★</span> IAPRONTO PRO</div>
+    <h1>ChatGPT fazendo<br>exatamente o que você <span class="grad">precisa</span></h1>
+    <p class="header-sub">Gere prompts pelo assistente guiado, use a biblioteca completa ou descreva em palavras normais e deixa a IA montar o prompt perfeito para você.</p>
+    <div class="header-pills">
+      <span class="hpill"><span class="dot" style="background:var(--success)"></span>IA integrada</span>
+      <span class="hpill"><span class="dot" style="background:var(--accent)"></span>20 prompts prontos</span>
+      <span class="hpill"><span class="dot" style="background:var(--accent2)"></span>Refinador de prompts</span>
+      <span class="hpill"><span class="dot" style="background:var(--accent3)"></span>Análise de imagem e arquivo</span>
+    </div>
+    <div id="ia-status-bar" class="ia-status online"><span class="ia-status-dot"></span>IA conectada</div>
+    <div class="theme-bar" style="justify-content:center;margin-top:.75rem">
+      <span class="theme-label">Tema</span>
+      <div class="theme-dot active" id="td-roxo" style="background:#8B7FFF" onclick="setTema('roxo')" title="Dark Roxo"></div>
+      <div class="theme-dot" id="td-verde" style="background:#22C55E" onclick="setTema('verde')" title="Dark Verde"></div>
+      <div class="theme-dot" id="td-ambar" style="background:#F59E0B" onclick="setTema('ambar')" title="Dark Âmbar"></div>
+      <div class="theme-dot" id="td-light" style="background:#E8E4FF;border-color:#C4BEFF" onclick="setTema('light')" title="Light"></div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="showTab('gerador',this)">🎯 Gerador</button>
+    <button class="nav-btn" onclick="showTab('chat',this)">💬 Chat</button>
+    <button class="nav-btn" onclick="showTab('ia',this)">✨ IA Direta</button>
+    <button class="nav-btn" onclick="showTab('biblioteca',this)">📚 Biblioteca</button>
+    <button class="nav-btn" onclick="showTab('refinar',this)">🔧 Refinar</button>
+    <button class="nav-btn" onclick="showTab('arquivo',this)">📎 Arquivo</button>
+    <button class="nav-btn" onclick="showTab('favoritos',this)">⭐ <span id="fav-count"></span></button>
+    <button class="nav-btn" id="nav-hist" onclick="showTab('historico',this)">🕓 <span id="hist-count"></span></button>
+  </div>
+
+  <!-- ======= GERADOR ======= -->
+  <div class="section active" id="tab-gerador">
+
+    <!-- NICHO -->
+    <div class="nicho-wrap" id="nicho-wrap">
+      <span class="nicho-label">Meu nicho</span>
+      <div class="nicho-chips">
+        <span class="nicho-chip" onclick="selecionarNicho(this,'Papelaria')">🖊️ Papelaria</span>
+        <span class="nicho-chip" onclick="selecionarNicho(this,'Moda e Acessórios')">👗 Moda</span>
+        <span class="nicho-chip" onclick="selecionarNicho(this,'Alimentação')">🍽️ Alimentação</span>
+        <span class="nicho-chip" onclick="selecionarNicho(this,'Beleza e Estética')">💅 Beleza</span>
+        <span class="nicho-chip" onclick="selecionarNicho(this,'Serviços')">🛠️ Serviços</span>
+        <span class="nicho-chip" onclick="selecionarNicho(this,'Educação')">📚 Educação</span>
+        <span class="nicho-chip" onclick="selecionarNicho(this,'Saúde e Bem-estar')">🌿 Saúde</span>
+        <span class="nicho-chip" onclick="selecionarNicho(this,'Tecnologia')">💻 Tech</span>
+        <span class="nicho-chip" onclick="selecionarNicho(this,'Advocacia')">⚖️ Advogado</span>
+        <span class="nicho-chip" onclick="selecionarNicho(this,'Contabilidade')">🧾 Contador</span>
+        <span class="nicho-chip" onclick="selecionarNicho(this,'Outro')">＋ Outro</span>
+      </div>
+    </div>
+
+    <div class="step-track">
+      <div class="step-dot active" id="sd1">1</div>
+      <div class="step-line" id="sl1"></div>
+      <div class="step-dot pending" id="sd2">2</div>
+      <div class="step-line" id="sl2"></div>
+      <div class="step-dot pending" id="sd3">3</div>
+      <div class="step-line" id="sl3"></div>
+      <div class="step-dot pending" id="sd4">4</div>
+    </div>
+
+    <div class="step-panel active" id="sp1">
+      <div class="step-eyebrow">Passo 1 de 4</div>
+      <div class="step-title">Para que você vai usar?</div>
+      <div class="step-desc">Escolha o objetivo principal da sua tarefa.</div>
+      <div class="chips">
+        <span class="chip" onclick="pick(this,'obj')">Criar texto ou post</span>
+        <span class="chip" onclick="pick(this,'obj')">Responder e-mail</span>
+        <span class="chip" onclick="pick(this,'obj')">Fazer um plano</span>
+        <span class="chip" onclick="pick(this,'obj')">Analisar algo</span>
+        <span class="chip" onclick="pick(this,'obj')">Criar legenda</span>
+        <span class="chip" onclick="pick(this,'obj')">Roteiro de vídeo</span>
+        <span class="chip" onclick="pick(this,'obj')">Script de vendas</span>
+        <span class="chip" onclick="pick(this,'obj')">Tirar uma dúvida</span>
+        <span class="chip" onclick="pick(this,'obj')">Outro objetivo</span>
+      </div>
+      <div class="btn-row"><button class="btn btn-p" onclick="goStep(2)">Próximo →</button></div>
+    </div>
+
+    <div class="step-panel" id="sp2">
+      <div class="step-eyebrow">Passo 2 de 4</div>
+      <div class="step-title">Descreva o que você precisa</div>
+      <div class="step-desc">Seja específico — mais detalhe = melhor resultado.</div>
+      <label class="fl">Sobre o que é?</label>
+      <div class="fh">Ex: quero um post para o Instagram da minha loja de papelaria anunciando uma promoção de volta às aulas</div>
+      <textarea id="f-tema" placeholder="Escreva aqui..."></textarea>
+      <div class="sp"></div>
+      <label class="fl">Público-alvo <span style="text-transform:none;font-weight:400;letter-spacing:0;color:var(--muted2)">(opcional)</span></label>
+      <input type="text" id="f-pub" placeholder="Ex: mães com filhos em idade escolar" />
+      <div class="sp"></div>
+      <label class="fl">Contexto extra <span style="text-transform:none;font-weight:400;letter-spacing:0;color:var(--muted2)">(opcional)</span></label>
+      <input type="text" id="f-ctx" placeholder="Ex: minha loja é online, vendemos para todo o Brasil" />
+      <div class="btn-row">
+        <button class="btn btn-g btn-sm" onclick="goStep(1)">← Voltar</button>
+        <button class="btn btn-p" onclick="goStep(3)">Próximo →</button>
+      </div>
+    </div>
+
+    <div class="step-panel" id="sp3">
+      <div class="step-eyebrow">Passo 3 de 4</div>
+      <div class="step-title">Como você quer que ele responda?</div>
+      <div class="step-desc">Tom, formato e restrições da resposta.</div>
+      <label class="fl">Tom</label>
+      <div class="chips">
+        <span class="chip" onclick="pick(this,'tom')">Profissional</span>
+        <span class="chip" onclick="pick(this,'tom')">Descontraído</span>
+        <span class="chip" onclick="pick(this,'tom')">Persuasivo</span>
+        <span class="chip" onclick="pick(this,'tom')">Simples e direto</span>
+        <span class="chip" onclick="pick(this,'tom')">Empático</span>
+        <span class="chip" onclick="pick(this,'tom')">Criativo e ousado</span>
+        <span class="chip" onclick="pick(this,'tom')">Técnico</span>
+      </div>
+      <label class="fl">Formato de saída <span style="text-transform:none;font-weight:400;letter-spacing:0;color:var(--muted2)">(opcional)</span></label>
+      <input type="text" id="f-fmt" placeholder='Ex: em tópicos, máximo 5 linhas, com emojis, no estilo X...' />
+      <div class="btn-row">
+        <button class="btn btn-g btn-sm" onclick="goStep(2)">← Voltar</button>
+        <button class="btn btn-p" onclick="goStep(4)">Gerar Prompt ✦</button>
+      </div>
+    </div>
+
+    <div class="step-panel" id="sp4">
+      <div class="step-eyebrow">Pronto!</div>
+      <div class="step-title">Seu prompt profissional</div>
+      <div class="step-desc">Copie e cole direto no ChatGPT. Ou use o botão Pro para a IA refinar automaticamente.</div>
+
+      <!-- antes/depois -->
+      <div class="compare-wrap" id="compare-area" style="display:none">
+        <div class="compare-box">
+          <div class="compare-label before">SEM prompt estruturado</div>
+          <div class="compare-text" id="compare-before"></div>
+        </div>
+        <div class="compare-box" style="border-color:rgba(139,127,255,0.3)">
+          <div class="compare-label after">COM IApronto</div>
+          <div class="compare-text after" id="compare-after"></div>
+        </div>
+      </div>
+
+      <div id="gen-result"></div>
+      <div class="btn-row" style="margin-top:1.5rem">
+        <button class="btn btn-g btn-sm" onclick="resetGen()">↺ Criar outro</button>
+        <button class="btn btn-ai btn-sm" id="btn-melhorar" onclick="melhorarComIA()">✨ Melhorar com IA</button>
+        <button class="btn btn-g btn-sm" id="btn-explicar" onclick="explicarPrompt()">💡 Por que funciona?</button>
+        <button class="btn btn-g btn-sm" id="btn-variacoes" onclick="gerarVariacoes()">🔀 3 variações</button>
+        <button class="btn btn-g btn-sm" id="btn-score" onclick="avaliarScore()">📊 Score</button>
+      </div>
+      <div id="expl-area"></div>
+      <div id="var-area"></div>
+      <div id="improved-area"></div>
+    </div>
+  </div>
+
+  <!-- ======= IA DIRETA ======= -->
+  <div class="section" id="tab-ia">
+    <div class="ia-hero">
+      <div style="font-size:2rem;margin-bottom:.6rem">✨</div>
+      <div class="ia-title">Descreva, a IA cria o prompt</div>
+      <div class="ia-desc">Conta em palavras normais o que você precisa fazer. A IA monta um prompt completo e estruturado — pronto para copiar e usar no ChatGPT.</div>
+    </div>
+
+    <label class="fl">O que você precisa fazer com o ChatGPT?</label>
+    <div class="fh">Exemplo: preciso de um prompt para criar uma sequência de 5 e-mails de boas-vindas para quem comprou na minha papelaria online. Quero um tom caloroso e que incentive a segunda compra.</div>
+    <textarea id="ia-input" placeholder="Descreva aqui o que você precisa..." style="min-height:110px"></textarea>
+
+    <div class="btn-row">
+      <button class="btn btn-ai" id="btn-ia" onclick="gerarIA()">✨ Gerar com IA</button>
+    </div>
+
+    <div id="ia-result" style="display:none;margin-top:1.25rem">
+      <div class="rbox pro-result">
+        <div class="reyebrow ai">✨ Prompt gerado pela IA</div>
+        <button class="cbtn" id="cb-ia" onclick="copyId('ia-resp','cb-ia')">COPIAR</button>
+        <div class="ptext" id="ia-resp"></div>
+      </div>
+      <div class="btn-row" style="margin-top:.75rem">
+        <button class="btn btn-g btn-sm" onclick="document.getElementById('ia-result').style.display='none';document.getElementById('ia-input').value=''">Gerar outro</button>
+        <button class="btn btn-ai btn-sm" onclick="enviarParaRefinar()">🔧 Refinar este prompt</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:1.1rem">
+      <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--accent3);margin-bottom:.6rem">DICA PRO</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.75">Mencione sempre: <strong style="color:var(--text)">seu nicho</strong>, <strong style="color:var(--text)">seu público</strong>, o <strong style="color:var(--text)">objetivo exato</strong> e o <strong style="color:var(--text)">formato que você quer</strong>. Quanto mais contexto, mais preciso e direto é o prompt gerado.</div>
+    </div>
+  </div>
+
+  <!-- ======= BIBLIOTECA ======= -->
+  <div class="section" id="tab-biblioteca">
+    <div style="margin-bottom:1.25rem">
+      <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:.3rem">Biblioteca completa <span class="tag-pro">PRO</span></div>
+      <div style="font-size:14px;color:var(--muted)">20 prompts testados e prontos para usar. Clique para expandir e copiar.</div>
+    </div>
+    <div class="cat-row" id="cat-row">
+      <span class="cpill active" onclick="filterLib(this,'todos')">Todos</span>
+      <span class="cpill" onclick="filterLib(this,'social media')">Social Media</span>
+      <span class="cpill" onclick="filterLib(this,'negócios')">Negócios</span>
+      <span class="cpill" onclick="filterLib(this,'vendas')">Vendas</span>
+      <span class="cpill" onclick="filterLib(this,'produtividade')">Produtividade</span>
+      <span class="cpill" onclick="filterLib(this,'lojistas')">🏪 Lojistas/MEI</span>
+      <span class="cpill" onclick="filterLib(this,'jurídico')">⚖️ Advogados</span>
+      <span class="cpill" onclick="filterLib(this,'contabil')">🧾 Contadores</span>
+      <span class="cpill" onclick="filterLib(this,'criativo')">Criativo</span>
+    </div>
+    <div class="p-grid" id="p-grid"></div>
+  </div>
+
+  <!-- ======= REFINADOR ======= -->
+  <div class="section" id="tab-refinar">
+    <div style="margin-bottom:1.25rem">
+      <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:.3rem">Refinador de Prompts <span class="tag-pro">PRO</span></div>
+      <div style="font-size:14px;color:var(--muted)">Cole qualquer prompt que você já tem — a IA transforma em uma versão mais poderosa, específica e estruturada.</div>
+    </div>
+
+    <label class="fl">Cole o prompt que você quer melhorar</label>
+    <div class="fh">Pode ser um prompt seu, algo que você encontrou online ou uma ideia ainda crua.</div>
+    <textarea id="ref-input" placeholder="Cole o prompt aqui..." style="min-height:110px"></textarea>
+
+    <div class="sp"></div>
+    <label class="fl">O que está faltando? <span style="text-transform:none;font-weight:400;letter-spacing:0;color:var(--muted2)">(opcional)</span></label>
+    <input type="text" id="ref-foco" placeholder='Ex: quero que fique mais persuasivo, mais específico para e-commerce...' />
+
+    <div class="btn-row">
+      <button class="btn btn-ai" id="btn-ref" onclick="refinarPrompt()">🔧 Refinar com IA</button>
+    </div>
+
+    <div id="ref-result" style="display:none;margin-top:1.25rem">
+      <div class="rbox pro-result">
+        <div class="reyebrow ai">🔧 Prompt refinado</div>
+        <button class="cbtn" id="cb-ref" onclick="copyId('ref-resp','cb-ref')">COPIAR</button>
+        <div class="ptext" id="ref-resp"></div>
+      </div>
+      <div class="btn-row" style="margin-top:.75rem">
+        <button class="btn btn-g btn-sm" onclick="document.getElementById('ref-result').style.display='none';document.getElementById('ref-input').value='';document.getElementById('ref-foco').value=''">Refinar outro</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:1.1rem">
+      <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--accent3);margin-bottom:.6rem">QUANDO USAR</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.75">Use o Refinador quando o ChatGPT entendeu o que você queria mas a resposta ficou genérica ou rasa. Cole o prompt que você usou e deixa a IA turbinar ele.</div>
+    </div>
+  </div>
+
+  <!-- ======= ARQUIVO / IMAGEM ======= -->
+  <div class="section" id="tab-arquivo">
+    <div style="margin-bottom:1.25rem">
+      <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:.3rem">Analisar Imagem ou Arquivo <span class="tag-pro">PRO</span></div>
+      <div style="font-size:14px;color:var(--muted)">Sobe uma imagem ou texto e a IA cria um prompt baseado no que ela encontrar.</div>
+    </div>
+
+    <!-- upload zone -->
+    <div id="dropzone" onclick="document.getElementById('file-input').click()" style="border:2px dashed var(--border2);border-radius:var(--r);padding:2.5rem 1.5rem;text-align:center;cursor:pointer;transition:all .25s;background:var(--surface)">
+      <div style="font-size:2.2rem;margin-bottom:.75rem">📎</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:.3rem;color:var(--text)">Clique para escolher o arquivo</div>
+      <div style="font-size:12px;color:var(--muted2)">Imagens (JPG, PNG, WEBP) ou texto (TXT) · Máx 4MB</div>
+      <input type="file" id="file-input" accept="image/jpeg,image/png,image/webp,image/gif,text/plain" style="display:none" onchange="handleFile(this)">
+    </div>
+
+    <!-- preview -->
+    <div id="file-preview" style="display:none;margin-top:1rem">
+      <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:1rem;display:flex;align-items:center;gap:1rem">
+        <img id="img-preview" style="width:64px;height:64px;object-fit:cover;border-radius:8px;display:none" />
+        <div id="txt-preview-icon" style="width:64px;height:64px;border-radius:8px;background:rgba(139,127,255,0.15);display:none;align-items:center;justify-content:center;font-size:1.8rem;flex-shrink:0">📄</div>
+        <div style="flex:1;min-width:0">
+          <div id="file-name" style="font-family:'Syne',sans-serif;font-weight:700;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis"></div>
+          <div id="file-size" style="font-size:12px;color:var(--muted);margin-top:.15rem"></div>
+        </div>
+        <button onclick="limparArquivo()" style="background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:.3rem .65rem;font-size:11px;color:var(--muted);cursor:pointer;flex-shrink:0">✕</button>
+      </div>
+    </div>
+
+    <!-- objetivo do prompt -->
+    <div style="margin-top:1.25rem">
+      <label class="fl">O que você quer que a IA faça com este arquivo?</label>
+      <div class="chips" id="arq-chips">
+        <span class="chip" onclick="pick(this,'arq-obj')">Criar um prompt baseado nisto</span>
+        <span class="chip" onclick="pick(this,'arq-obj')">Descrever para usar no ChatGPT</span>
+        <span class="chip" onclick="pick(this,'arq-obj')">Criar legenda para Instagram</span>
+        <span class="chip" onclick="pick(this,'arq-obj')">Sugerir melhorias no conteúdo</span>
+        <span class="chip" onclick="pick(this,'arq-obj')">Analisar e dar feedback</span>
+        <span class="chip" onclick="pick(this,'arq-obj')">Outro</span>
+      </div>
+      <label class="fl">Contexto adicional <span style="text-transform:none;font-weight:400;letter-spacing:0;color:var(--muted2)">(opcional)</span></label>
+      <input type="text" id="arq-ctx" placeholder='Ex: é um post para o Instagram da minha papelaria, tom descontraído...' />
+    </div>
+
+    <div class="btn-row" style="margin-top:1.25rem">
+      <button class="btn btn-ai" id="btn-arq" onclick="analisarArquivo()">✨ Analisar com IA</button>
+    </div>
+
+    <div id="arq-result" style="display:none;margin-top:1.25rem">
+      <div class="rbox pro-result">
+        <div class="reyebrow ai">📎 Resultado da análise</div>
+        <button class="cbtn" id="cb-arq" onclick="copyId('arq-resp','cb-arq')">COPIAR</button>
+        <div class="ptext" id="arq-resp"></div>
+      </div>
+      <div class="btn-row" style="margin-top:.75rem">
+        <button class="btn btn-g btn-sm" onclick="resetArquivo()">Analisar outro</button>
+        <button class="btn btn-ai btn-sm" onclick="levarResultadoParaRefinar()">🔧 Refinar este prompt</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div style="background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:1.1rem">
+      <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--accent3);margin-bottom:.6rem">EXEMPLOS DE USO</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.9">
+        📸 Sobe a foto de um produto → IA gera um prompt para o ChatGPT criar a descrição ou legenda<br>
+        📄 Sobe um texto rascunho → IA gera um prompt para o ChatGPT reescrever, melhorar ou adaptar<br>
+        🖼️ Sobe uma imagem de referência → IA descreve e cria um prompt para Midjourney ou DALL-E
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= CHAT ======= -->
+  <div class="section" id="tab-chat">
+    <div style="margin-bottom:1.25rem">
+      <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:.3rem">💬 Construir prompt em conversa</div>
+      <div style="font-size:14px;color:var(--muted)">A IA faz perguntas e monta o prompt junto com você. Mais natural que formulário.</div>
+    </div>
+    <div class="chat-wrap" id="chat-msgs"></div>
+    <div class="chat-input-row">
+      <textarea id="chat-input" placeholder="Responda aqui..." rows="2" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarChat()}"></textarea>
+      <button class="btn btn-ai" style="align-self:flex-end" onclick="enviarChat()">Enviar</button>
+    </div>
+    <div id="chat-prompt-result" style="display:none;margin-top:1rem">
+      <div class="chat-result">
+        <div class="reyebrow ai">💬 Prompt construído em conversa</div>
+        <button class="cbtn" id="cb-chat" onclick="copyId('chat-prompt-txt','cb-chat')">COPIAR</button>
+        <div class="ptext" id="chat-prompt-txt"></div>
+      </div>
+      <div class="btn-row" style="margin-top:.75rem">
+        <button class="btn btn-g btn-sm" onclick="resetChat()">↺ Nova conversa</button>
+        <button class="btn btn-ai btn-sm" onclick="levarChatParaRefinar()">🔧 Refinar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ======= FAVORITOS ======= -->
+  <div class="section" id="tab-favoritos">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:.2rem">⭐ Prompts favoritos</div>
+        <div style="font-size:14px;color:var(--muted)">Os prompts da biblioteca que você marcou com estrela.</div>
+      </div>
+      <button class="btn btn-g btn-sm" onclick="limparFavoritos()">Limpar</button>
+    </div>
+    <div id="fav-list"></div>
+  </div>
+
+  <!-- ======= HISTÓRICO ======= -->
+  <div class="section" id="tab-historico">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.25rem;flex-wrap:wrap;gap:.75rem">
+      <div>
+        <div style="font-family:'Syne',sans-serif;font-size:1.2rem;font-weight:800;margin-bottom:.2rem">Seus prompts salvos</div>
+        <div style="font-size:14px;color:var(--muted)">Tudo que você gerou fica aqui. Clique para reusar.</div>
+      </div>
+      <button class="btn btn-g btn-sm" onclick="limparHistorico()">Limpar tudo</button>
+    </div>
+    <div id="hist-list"></div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-logo">IAPRONTO PRO</div>
+    <div class="footer-text">Feito para quem quer resultado, não curso.</div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">✓ COPIADO</div>
+
+<script>
+const SEL={};
+
+const LIB=[
+  {n:"Post de vendas para Instagram",c:"social media",p:"Post persuasivo com CTA forte",t:"Você é especialista em copywriting para redes sociais. Crie um post de vendas para o Instagram sobre [PRODUTO/SERVIÇO]. Público-alvo: [PÚBLICO]. Use linguagem [TOM], inclua emojis relevantes, destaque o principal benefício e finalize com uma chamada para ação urgente. Máximo 150 palavras."},
+  {n:"Plano de conteúdo — 1 semana",c:"social media",p:"7 dias de posts organizados por objetivo",t:"Crie um plano de conteúdo para 7 dias para o Instagram de um negócio de [NICHO]. Para cada dia inclua: tema do post, formato sugerido (carrossel, reels, foto), legenda curta e 3 hashtags estratégicas. Objetivo: [engajamento / autoridade / vendas]. Tom: [ESCOLHA]."},
+  {n:"Bio profissional para Instagram",c:"social media",p:"Apresentação que gera confiança",t:"Crie uma bio profissional para o Instagram de [NOME] que atua como [PROFISSÃO/NICHO]. Destaque: resultado que entrego, para quem trabalho e um diferencial único. Inclua 1 CTA claro. Versão curta (até 150 caracteres)."},
+  {n:"Roteiro de Reels/TikTok",c:"criativo",p:"Script de 30–60 segundos que retém atenção",t:"Crie um roteiro de vídeo curto (30 a 60 segundos) para Reels ou TikTok sobre [TEMA]. Estrutura: gancho nos primeiros 3 segundos (frase que prende), desenvolvimento (3 pontos rápidos), CTA final. Tom: [ESCOLHA]. Inclua indicações de texto na tela."},
+  {n:"Resposta a cliente insatisfeito",c:"vendas",p:"Mantém o cliente e protege sua reputação",t:"Você é especialista em atendimento ao cliente. Redija uma resposta profissional e empática para um cliente que reclamou de [PROBLEMA]. Reconheça o problema sem excesso de desculpas, ofereça solução concreta e mantenha tom cordial. Máximo 3 parágrafos."},
+  {n:"Script de follow-up de vendas",c:"vendas",p:"Retoma o contato sem parecer insistente",t:"Escreva um script de follow-up para contactar [LEAD/CLIENTE] que demonstrou interesse em [PRODUTO/SERVIÇO] mas não respondeu há [X dias]. Seja curto (máximo 5 linhas), traga um novo ângulo ou benefício e termine com uma pergunta fácil de responder. Tom: [profissional/descontraído]."},
+  {n:"Descrição de produto para e-commerce",c:"vendas",p:"Descrição que converte visitante em comprador",t:"Você é copywriter especializado em e-commerce. Crie uma descrição de produto para [NOME DO PRODUTO] com estas características: [LISTE AS CARACTERÍSTICAS]. Foque em benefícios (não só especificações), use linguagem que conecta com [PÚBLICO-ALVO]. Entre 80 e 120 palavras. Finalize com bullet dos 3 diferenciais."},
+  {n:"E-mail de proposta comercial",c:"negócios",p:"Proposta profissional que gera resposta",t:"Você é consultor de vendas. Redija um e-mail de proposta para [PRODUTO/SERVIÇO] direcionado a [TIPO DE CLIENTE]. Inclua: assunto impactante, apresentação rápida da solução, 3 benefícios principais e CTA claro. Tom profissional. Máximo 250 palavras."},
+  {n:"Análise de ideia de negócio",c:"negócios",p:"Pontos fortes, riscos e próximos passos",t:"Analise esta ideia de negócio como consultor experiente: [DESCREVA SUA IDEIA]. Estruture em: 1) Pontos fortes, 2) Riscos e pontos fracos, 3) Oportunidades de mercado, 4) Principais concorrentes, 5) Próximos passos recomendados. Seja honesto e direto, não apenas elogioso."},
+  {n:"Plano de ação 30 dias",c:"negócios",p:"Metas semanais e tarefas concretas",t:"Crie um plano de ação para os próximos 30 dias para [OBJETIVO]. Organize por semanas, com 3 a 5 ações concretas por semana. Inclua uma meta mensurável para cada semana e uma tarefa de revisão semanal. Formato: tabela ou lista clara."},
+  {n:"Sequência de e-mails de boas-vindas",c:"negócios",p:"3 e-mails que criam relacionamento",t:"Crie uma sequência de 3 e-mails de boas-vindas para clientes que compraram [PRODUTO/SERVIÇO] pela primeira vez. E-mail 1 (imediato): agradecimento e o que esperar. E-mail 2 (3 dias depois): dica de como aproveitar melhor. E-mail 3 (7 dias depois): convite para próxima compra ou upsell. Tom: [ESCOLHA]."},
+  {n:"Checklist de produtividade diária",c:"produtividade",p:"Organiza o dia com foco no que importa",t:"Ajude-me a criar um checklist diário de produtividade para [PROFISSÃO/CONTEXTO]. Meu maior desafio é [DESAFIO]. Organize as tarefas por prioridade (alta/média/baixa), inclua blocos de tempo sugeridos e uma tarefa de encerramento do dia. Formato de lista clara."},
+  {n:"Resumo executivo de documento",c:"produtividade",p:"Extrai os pontos essenciais em minutos",t:"Você é especialista em síntese de informações. Leia o texto a seguir e crie um resumo executivo com: 1) Ideia central (1 frase), 2) 5 pontos principais em tópicos, 3) Conclusão ou recomendação. Linguagem objetiva. Máximo 300 palavras.\n\n[COLE O TEXTO AQUI]"},
+  {n:"Roteiro de apresentação",c:"produtividade",p:"Estrutura que engaja do início ao fim",t:"Crie um roteiro para uma apresentação de [DURAÇÃO] minutos sobre [TEMA]. Para cada slide/seção inclua: título, pontos principais a cobrir e sugestão de recurso visual. Público: [PÚBLICO]. Objetivo: [informar / persuadir / vender]. Tom: [ESCOLHA]."},
+  {n:"Post educativo com carrossel",c:"criativo",p:"Carrossel que ensina e gera salvamentos",t:"Crie o texto para um carrossel educativo no Instagram sobre [TEMA]. Estrutura: Slide 1 — gancho (pergunta ou afirmação forte), Slides 2 a 7 — uma dica por slide (título + 1 frase explicativa), Slide 8 — CTA (o que fazer agora). Tom: [ESCOLHA]. Para cada slide escreva apenas o essencial."},
+  {n:"Hashtags estratégicas",c:"social media",p:"Combinação de hashtags por alcance",t:"Sugira 30 hashtags estratégicas para posts de [NICHO] no Instagram. Divida em 3 grupos: 10 hashtags grandes (+500k posts), 10 médias (50k-500k), 10 pequenas e nicho (<50k). Explique por que usar os 3 grupos juntos."},
+  {n:"Copy para anúncio pago (Meta Ads)",c:"vendas",p:"Texto de anúncio que para o scroll",t:"Você é especialista em tráfego pago. Escreva 3 versões de copy para anúncio no Facebook/Instagram para [PRODUTO/SERVIÇO]. Público: [PÚBLICO]. Cada versão deve ter: gancho (1 linha), corpo (2-3 linhas) e CTA. Teste ângulos diferentes: um focado em dor, um em desejo, um em prova social."},
+  {n:"Resposta a comentário negativo público",c:"vendas",p:"Transforma crítica em ponto positivo",t:"Você gerencia a reputação online de [EMPRESA/PERFIL]. Crie uma resposta para o seguinte comentário negativo público: [COMENTÁRIO]. A resposta deve: ser pública e profissional, reconhecer sem admitir culpa desnecessariamente, convidar para resolver em privado. Máximo 3 linhas."},
+  {n:"Biografia para LinkedIn",c:"negócios",p:"Perfil que atrai oportunidades",t:"Crie uma bio completa para o LinkedIn de [NOME], [CARGO/PROFISSÃO] com [X anos] de experiência em [ÁREA]. Destaque: principais conquistas, especialidades, valor que entrega e objetivo profissional atual. Tom profissional mas com personalidade. Entre 150 e 200 palavras."},
+  {n:"Texto de página de vendas (VSL)",c:"criativo",p:"Estrutura que converte leitores em compradores",t:"Você é copywriter especializado em páginas de vendas. Escreva o texto para a página de vendas de [PRODUTO/SERVIÇO]. Inclua: headline impactante, identificação do problema, apresentação da solução, 3 benefícios principais, prova social (pode ser genérica), garantia e CTA final. Público: [PÚBLICO]. Tom: persuasivo e empático."},
+  {n:"Post de lançamento de produto — loja física",c:"lojistas",p:"Anuncia novo produto e gera visitas à loja",t:"Você é especialista em marketing para pequenos negócios locais. Crie um post para o Instagram anunciando o lançamento de [PRODUTO] na loja [NOME DA LOJA] em [CIDADE/BAIRRO]. Destaque: o que torna esse produto especial, para quem é ideal, preço (se quiser revelar) e como comprar (loja física ou WhatsApp). Use emojis, tom animado e inclua CTA para o cliente ir até a loja ou mandar mensagem. Máximo 150 palavras."},
+  {n:"Mensagem de WhatsApp — recuperar cliente sumido",c:"lojistas",p:"Traz de volta quem não compra há tempo",t:"Você é especialista em relacionamento com clientes para pequenos negócios. Escreva uma mensagem de WhatsApp curta e amigável para um cliente que não compra há [TEMPO] meses. A mensagem deve: parecer pessoal (não spam), mencionar algo específico da loja [NOME/NICHO], oferecer uma vantagem exclusiva para ele voltar, e ter no máximo 5 linhas. Tom caloroso e próximo, sem parecer venda forçada."},
+  {n:"Resposta automática — fora do horário",c:"lojistas",p:"Profissional e não perde o cliente",t:"Crie uma mensagem de resposta automática para o WhatsApp da loja [NOME] quando o cliente entra em contato fora do horário de atendimento [HORÁRIO]. A mensagem deve: ser amigável e profissional, informar quando será respondido, e opcionalmente direcionar para o catálogo online ou Instagram. Máximo 4 linhas. Tom: próximo e humano, não robótico."},
+  {n:"Descrição de produto para catálogo WhatsApp",c:"lojistas",p:"Descrição que vende pelo celular",t:"Você é especialista em vendas pelo WhatsApp para pequenas lojas. Escreva uma descrição de produto para catálogo do WhatsApp Business sobre [PRODUTO]. A descrição deve ter: nome comercial atrativo, 3 a 4 linhas descrevendo o produto com benefícios (não só especificações), informação de tamanhos/cores/variações se houver, e preço formatado. Tom: direto e persuasivo. Máximo 80 palavras."},
+  {n:"Post de depoimento de cliente (prova social)",c:"lojistas",p:"Usa avaliação real para vender mais",t:"Você é especialista em marketing de prova social para pequenos negócios. Crie um post para o Instagram usando o seguinte depoimento de cliente: [COLE O DEPOIMENTO]. O post deve: destacar a parte mais impactante do depoimento, contextualizar o produto ou serviço mencionado, e ter um CTA suave convidando outros clientes a experimentar. Use emojis com moderação. Tom: autêntico e grato. Máximo 120 palavras."},
+  {n:"Post de autoridade jurídica para Instagram",c:"jurídico",p:"Educa o público e gera leads para o escritório",t:"Você é especialista em marketing jurídico digital. Crie um post educativo para o Instagram de um advogado especializado em [ÁREA DO DIREITO]. O post deve: abordar uma dúvida comum do público leigo sobre [TEMA JURÍDICO], explicar de forma simples sem usar jargão excessivo, demonstrar autoridade sem parecer arrogante, e finalizar com um CTA para consulta. Atenção: respeite as normas do Código de Ética da OAB — sem promessas de resultado, sem sensacionalismo. Tom: profissional e acessível. Máximo 150 palavras."},
+  {n:"Resposta educada a pergunta jurídica nas redes",c:"jurídico",p:"Responde sem dar consultoria gratuita",t:"Você é advogado especializado em [ÁREA] e recebeu a seguinte pergunta pública nas redes sociais: [PERGUNTA]. Crie uma resposta que: reconheça a dúvida, dê uma orientação geral sem configurar consultoria jurídica, explique que cada caso é único e recomende uma consulta formal. Tom: cordial, profissional e humano. Máximo 5 linhas. Não use expressões como 'depende' sem dar ao menos uma direção geral."},
+  {n:"E-mail de apresentação do escritório",c:"jurídico",p:"Apresentação profissional para novos clientes",t:"Você é especialista em comunicação para escritórios de advocacia. Redija um e-mail de apresentação do escritório [NOME] para um potencial cliente que demonstrou interesse em [ÁREA DO DIREITO]. Inclua: breve apresentação do escritório e especialidade, como o escritório pode ajudar neste caso específico, próximo passo claro (agendar consulta). Tom: profissional, direto e humano. Máximo 200 palavras. Sem linguagem rebuscada."},
+  {n:"Post explicando obrigação fiscal para clientes",c:"contabil",p:"Educa clientes e reforça a autoridade do contador",t:"Você é especialista em comunicação contábil para redes sociais. Crie um post para o Instagram de um escritório de contabilidade explicando [OBRIGAÇÃO FISCAL/TEMA CONTÁBIL: ex. Simples Nacional, MEI, IR, DAS] de forma simples para empresários leigos. O post deve: explicar o que é, por que é importante, o que acontece se não cumprir, e como o contador ajuda. Use emojis com moderação. Tom: didático e próximo. Máximo 150 palavras."},
+  {n:"Mensagem de alerta de prazo para cliente",c:"contabil",p:"Avisa o cliente sem gerar pânico",t:"Você é contador e precisa avisar um cliente sobre um prazo fiscal importante se aproximando. Crie uma mensagem de WhatsApp profissional e clara informando: qual é a obrigação ([OBRIGAÇÃO]), qual o prazo ([DATA]), o que o cliente precisa enviar ou fazer, e consequências de não cumprir (sem alarmar excessivamente). Tom: profissional, direto e prestativo. Máximo 6 linhas."},
+  {n:"Proposta de serviços contábeis",c:"contabil",p:"Proposta clara que justifica o honorário",t:"Você é especialista em comunicação para escritórios de contabilidade. Crie uma proposta de serviços para [TIPO DE EMPRESA: MEI/ME/EPP] no segmento de [NICHO DA EMPRESA]. A proposta deve incluir: serviços incluídos (rotina contábil, folha, obrigações acessórias), diferenciais do escritório, valor do honorário [VALOR] e justificativa de valor. Tom: profissional e consultivo. Máximo 300 palavras. Evite linguagem técnica sem explicação."},
+];
+
+function showTab(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function pick(el,g){
+  el.closest('.chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');SEL[g]=el.textContent.trim();
+}
+
+function goStep(n){
+  document.querySelectorAll('.step-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('sp'+n).classList.add('active');
+  for(let i=1;i<=4;i++){
+    const d=document.getElementById('sd'+i),l=document.getElementById('sl'+i);
+    if(i<n){d.className='step-dot done';d.textContent='✓';if(l)l.className='step-line done'}
+    else if(i===n){d.className='step-dot active';d.textContent=i;if(l)l.className='step-line'}
+    else{d.className='step-dot pending';d.textContent=i;if(l)l.className='step-line'}
+  }
+  if(n===4)buildPrompt();
+}
+
+function buildPrompt(){
+  const obj=SEL['obj']||'criar conteúdo';
+  const tom=SEL['tom']||'claro e direto';
+  const tema=document.getElementById('f-tema').value.trim()||'[defina o tema]';
+  const pub=document.getElementById('f-pub').value.trim();
+  const ctx=document.getElementById('f-ctx').value.trim();
+  const fmt=document.getElementById('f-fmt').value.trim();
+  const nicho=NICHO_ATIVO;
+
+  let p=`Você é um especialista em ${obj.toLowerCase()}${nicho?' focado no segmento de '+nicho:''}.`;
+  p+=`\n\nTarefa: ${obj} sobre o seguinte tema: ${tema}.`;
+  if(pub)p+=`\n\nPúblico-alvo: ${pub}.`;
+  if(nicho&&!ctx)p+=`\n\nContexto do negócio: segmento de ${nicho} no Brasil.`;
+  if(ctx)p+=`\n\nContexto importante: ${ctx}${nicho?' (segmento: '+nicho+')':''}.`;
+  p+=`\n\nTom da resposta: ${tom.toLowerCase()}.`;
+  if(fmt)p+=`\n\nFormato esperado: ${fmt}.`;
+  p+=`\n\nSeja direto, prático e entregue o resultado completo sem introduções desnecessárias.`;
+
+  // antes/depois
+  const beforeSimple=tema.length>60?tema.slice(0,60)+'...':tema;
+  document.getElementById('compare-before').textContent=beforeSimple;
+  document.getElementById('compare-after').textContent=p.slice(0,120)+'...';
+  document.getElementById('compare-area').style.display='grid';
+
+  document.getElementById('gen-result').innerHTML=`<div class="rbox"><div class="reyebrow">Seu prompt${nicho?` <span style="font-size:10px;color:var(--muted);font-weight:400;letter-spacing:0;text-transform:none">· nicho: ${nicho}</span>`:''}  </div><button class="cbtn" id="cb-gen" onclick="copyId('pt-gen','cb-gen')">COPIAR</button><div class="typing-wrap"><div class="typing-text" id="pt-gen"></div></div></div>`;
+  document.getElementById('improved-area').innerHTML='';
+  document.getElementById('expl-area').innerHTML='';
+  document.getElementById('var-area').innerHTML='';
+
+  // efeito typewriter
+  typewriterEfeito('pt-gen', p);
+
+  salvarHistorico(p,'gerador');
+  atualizarDashboard();
+
+  const total=(parseInt(localStorage.getItem('iap_count')||'0'))+1;
+  localStorage.setItem('iap_count',total);
+  if(total===3){
+    setTimeout(()=>{
+      const area=document.getElementById('gen-result');
+      const banner=document.createElement('div');
+      banner.className='upsell-banner';
+      banner.style.marginTop='1rem';
+      banner.innerHTML=`<div class="upsell-text"><strong>Você já gerou ${total} prompts hoje 🎉</strong><span>Compartilhe o IApronto com alguém que também precisa usar o ChatGPT melhor.</span></div>`;
+      area.appendChild(banner);
+    },400);
+  }
+}
+
+function resetGen(){
+  SEL['obj']=SEL['tom']=undefined;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+  ['f-tema','f-pub','f-ctx','f-fmt'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
+  document.getElementById('gen-result').innerHTML='';
+  document.getElementById('improved-area').innerHTML='';
+  document.getElementById('expl-area').innerHTML='';
+  document.getElementById('var-area').innerHTML='';
+  document.getElementById('compare-area').style.display='none';
+  document.querySelectorAll('.step-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('sp1').classList.add('active');
+  for(let i=1;i<=4;i++){const d=document.getElementById('sd'+i),l=document.getElementById('sl'+i);if(i===1){d.className='step-dot active';d.textContent='1'}else{d.className='step-dot pending';d.textContent=i;if(l)l.className='step-line'}}
+}
+
+// ===== NICHO =====
+let NICHO_ATIVO=localStorage.getItem('iap_nicho')||'';
+
+function selecionarNicho(el,nome){
+  document.querySelectorAll('.nicho-chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  NICHO_ATIVO=nome;
+  localStorage.setItem('iap_nicho',nome);
+}
+
+function iniciarNicho(){
+  if(!NICHO_ATIVO)return;
+  document.querySelectorAll('.nicho-chip').forEach(c=>{
+    if(c.textContent.trim().includes(NICHO_ATIVO.split(' ')[0])||c.getAttribute('onclick').includes(NICHO_ATIVO)){
+      c.classList.add('sel');
+    }
+  });
+}
+
+// ===== EXPLICAR PROMPT =====
+async function explicarPrompt(){
+  const el=document.getElementById('pt-gen');if(!el)return;
+  const txt=el.textContent.trim();
+  const area=document.getElementById('expl-area');
+  const btn=document.getElementById('btn-explicar');
+  if(area.innerHTML&&area.innerHTML.includes('expl-box')){area.innerHTML='';btn.textContent='💡 Por que funciona?';return}
+  btn.disabled=true;btn.textContent='Analisando...';
+  area.innerHTML='<div class="thinking" style="padding:.5rem 0"><div class="tbar"><span></span><span></span><span></span></div> Explicando o prompt...</div>';
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,messages:[{role:'user',content:`Analise o prompt abaixo e explique em exatamente 4 tópicos curtos (1 frase cada) por que cada parte dele é eficaz para o ChatGPT. Use linguagem simples, como se explicasse para alguém que nunca estudou IA. Responda APENAS com 4 linhas no formato:\n1. [explicação]\n2. [explicação]\n3. [explicação]\n4. [explicação]\n\nPrompt:\n${txt}`}]})});
+    const d=await r.json();
+    const txt2=d.content?.[0]?.text||'';
+    const linhas=txt2.split('\n').filter(l=>l.trim()&&/^\d\./.test(l.trim()));
+    area.innerHTML=linhas.length?`<div class="expl-box"><div class="expl-title">💡 Por que esse prompt funciona</div><ul class="expl-list">${linhas.map(l=>`<li>${l.replace(/^\d\.\s*/,'')}</li>`).join('')}</ul></div>`:'';
+  }catch(e){area.innerHTML=''}
+  btn.disabled=false;btn.textContent='💡 Por que funciona?';
+}
+
+// ===== VARIAÇÕES =====
+async function gerarVariacoes(){
+  const el=document.getElementById('pt-gen');if(!el)return;
+  const txt=el.textContent.trim();
+  const area=document.getElementById('var-area');
+  const btn=document.getElementById('btn-variacoes');
+  if(area.innerHTML&&area.innerHTML.includes('var-grid')){area.innerHTML='';btn.textContent='🔀 3 variações';return}
+  btn.disabled=true;btn.textContent='Gerando...';
+  area.innerHTML='<div class="thinking" style="padding:.5rem 0"><div class="tbar"><span></span><span></span><span></span></div> Criando variações...</div>';
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1200,messages:[{role:'user',content:`Com base no prompt abaixo, crie 3 variações mantendo o mesmo objetivo mas com abordagens diferentes:\n- Variação 1: tom mais direto e objetivo\n- Variação 2: tom mais empático e humano\n- Variação 3: foco em resultado/conversão\n\nResponda EXATAMENTE neste formato (sem mais nada):\n[VAR1]\n<texto da variação 1>\n[VAR2]\n<texto da variação 2>\n[VAR3]\n<texto da variação 3>\n\nPrompt original:\n${txt}`}]})});
+    const d=await r.json();
+    const raw=d.content?.[0]?.text||'';
+    const matches=[...raw.matchAll(/\[VAR\d\]\n([\s\S]*?)(?=\[VAR\d\]|$)/g)];
+    const labels=['Tom direto e objetivo','Tom empático e humano','Foco em resultado'];
+    if(matches.length){
+      area.innerHTML=`<div class="var-grid">${matches.map((m,i)=>{
+        const v=m[1].trim();const id='vt'+i;
+        return`<div class="var-item"><div class="var-label">Variação ${i+1} — ${labels[i]||''}</div><div class="var-text" id="${id}">${v}</div><div style="margin-top:.75rem"><button class="btn btn-p btn-sm" onclick="copyId('${id}',null);showToast()">Copiar</button></div></div>`;
+      }).join('')}</div>`;
+    } else {area.innerHTML=''}
+  }catch(e){area.innerHTML=''}
+  btn.disabled=false;btn.textContent='🔀 3 variações';
+}
+
+async function melhorarComIA(){
+  const el=document.getElementById('pt-gen');if(!el)return;
+  const txt=el.textContent.trim();
+  const btn=document.getElementById('btn-melhorar');
+  btn.disabled=true;btn.textContent='Melhorando...';
+  const area=document.getElementById('improved-area');
+  area.innerHTML='<div class="thinking"><div class="tbar"><span></span><span></span><span></span></div> IA refinando seu prompt...</div>';
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`Você é especialista em engenharia de prompts. Melhore o prompt abaixo deixando-o mais específico, estruturado e eficaz para o ChatGPT. Adicione contexto, instrução de papel (role), formato de saída esperado e restrições úteis. Mantenha a intenção original. Retorne apenas o prompt melhorado, sem explicações.\n\nPrompt:\n${txt}`}]})});
+    const d=await r.json();
+    const novo=d.content?.[0]?.text||'';
+    area.innerHTML=novo?`<div class="rbox pro-result" style="margin-top:1.25rem"><div class="reyebrow ai">✨ Versão melhorada pela IA</div><button class="cbtn" id="cb-imp" onclick="copyId('pt-imp','cb-imp')">COPIAR</button><div class="ptext" id="pt-imp">${novo}</div></div>`:'<div style="color:var(--muted);font-size:13px;padding:.5rem 0">Não foi possível melhorar. Tente novamente.</div>';
+  }catch(e){area.innerHTML='<div style="color:var(--muted);font-size:13px;padding:.5rem 0">Erro ao conectar com a IA.</div>'}
+  btn.disabled=false;btn.textContent='✨ Melhorar com IA';
+}
+
+async function gerarIA(){
+  const p=document.getElementById('ia-input').value.trim();if(!p)return;
+  const btn=document.getElementById('btn-ia');
+  btn.disabled=true;btn.textContent='Gerando...';
+  const res=document.getElementById('ia-result');
+  const resp=document.getElementById('ia-resp');
+  res.style.display='block';
+  resp.textContent='';
+  resp.parentElement.innerHTML='<div class="thinking"><div class="tbar"><span></span><span></span><span></span></div> IA gerando seu prompt...</div>';
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`Você é especialista em engenharia de prompts para o ChatGPT. Com base na necessidade abaixo, crie um prompt completo, estruturado e profissional que o usuário possa copiar e colar direto no ChatGPT. Inclua: papel (você é...), contexto, tarefa específica, tom, formato de saída esperado. Retorne APENAS o prompt pronto — sem explicações, sem introdução.\n\nNecessidade: ${p}`}]})});
+    const d=await r.json();
+    const txt=d.content?.[0]?.text||'Não foi possível gerar.';
+    res.innerHTML=`<div class="rbox pro-result"><div class="reyebrow ai">✨ Prompt gerado pela IA</div><button class="cbtn" id="cb-ia" onclick="copyId('ia-resp','cb-ia')">COPIAR</button><div class="ptext" id="ia-resp">${txt}</div></div><div class="btn-row" style="margin-top:.75rem"><button class="btn btn-g btn-sm" onclick="document.getElementById('ia-result').style.display='none';document.getElementById('ia-input').value=''">Gerar outro</button><button class="btn btn-ai btn-sm" onclick="enviarParaRefinar()">🔧 Refinar este prompt</button></div>`;
+    salvarHistorico(txt,'ia');
+  }catch(e){res.innerHTML='<div style="color:var(--muted);font-size:13px;padding:.5rem 0">Erro ao conectar com a IA. Tente novamente.</div>'}
+  btn.disabled=false;btn.textContent='✨ Gerar com IA';
+}
+
+function enviarParaRefinar(){
+  const el=document.getElementById('ia-resp');if(!el)return;
+  const txt=el.textContent.trim();
+  document.getElementById('ref-input').value=txt;
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-refinar').classList.add('active');
+  document.querySelectorAll('.nav-btn')[3].classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+async function refinarPrompt(){
+  const p=document.getElementById('ref-input').value.trim();if(!p)return;
+  const foco=document.getElementById('ref-foco').value.trim();
+  const btn=document.getElementById('btn-ref');
+  btn.disabled=true;btn.textContent='Refinando...';
+  const res=document.getElementById('ref-result');
+  res.style.display='block';
+  res.querySelector('.ptext').textContent='';
+  res.querySelector('.rbox').innerHTML='<div class="thinking"><div class="tbar"><span></span><span></span><span></span></div> IA refinando...</div>';
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:`Você é especialista em engenharia de prompts. Melhore o prompt abaixo de forma significativa. ${foco?'O usuário quer especialmente: '+foco+'.':''} Adicione mais especificidade, estruture melhor as instruções, defina papel/contexto/formato de saída se estiverem ausentes. Retorne APENAS o prompt refinado, sem comentários.\n\nPrompt original:\n${p}`}]})});
+    const d=await r.json();
+    const txt=d.content?.[0]?.text||'Não foi possível refinar.';
+    res.innerHTML=`<div class="rbox pro-result"><div class="reyebrow ai">🔧 Prompt refinado</div><button class="cbtn" id="cb-ref" onclick="copyId('ref-resp','cb-ref')">COPIAR</button><div class="ptext" id="ref-resp">${txt}</div></div><div class="btn-row" style="margin-top:.75rem"><button class="btn btn-g btn-sm" onclick="document.getElementById('ref-result').style.display='none';document.getElementById('ref-input').value='';document.getElementById('ref-foco').value=''">Refinar outro</button></div>`;
+  }catch(e){res.innerHTML='<div style="color:var(--muted);font-size:13px;padding:.5rem 0">Erro ao conectar com a IA.</div>'}
+  btn.disabled=false;btn.textContent='🔧 Refinar com IA';
+}
+
+function copyId(id,bid){
+  const el=document.getElementById(id);if(!el)return;
+  navigator.clipboard.writeText(el.textContent).then(()=>{
+    if(bid){const btn=document.getElementById(bid);if(btn){const o=btn.textContent;btn.textContent='✓ OK';btn.style.background='var(--success)';btn.style.color='#08080F';setTimeout(()=>{btn.textContent=o;btn.style.background='';btn.style.color=''},2000)}}
+    showToast();
+  });
+}
+
+function showToast(){const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+
+function filterLib(el,cat){
+  document.querySelectorAll('.cpill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');renderLib(cat);
+}
+
+function renderLib(cat){
+  const grid=document.getElementById('p-grid');
+  const list=cat==='todos'?LIB:LIB.filter(p=>p.c===cat);
+  const favs=getFavs();
+  grid.innerHTML=list.map((p,i)=>{
+    const isFav=favs.includes(i);
+    return`<div class="pitem" id="pi${i}" onclick="toggleP(${i})">
+      <div class="phead">
+        <div class="pname">${p.n}</div>
+        <div style="display:flex;align-items:center;gap:6px">
+          <div class="pcat">${p.c}</div>
+          <button class="fav-btn" id="fb${i}" onclick="event.stopPropagation();toggleFav(${i})" title="Favoritar">${isFav?'⭐':'☆'}</button>
+        </div>
+      </div>
+      <div class="pprev">${p.p}</div>
+      <div class="pfull" id="pf${i}">${p.t}
+        <div class="pact">
+          <button class="btn btn-p btn-sm" onclick="event.stopPropagation();copyLib(${i},this)">Copiar prompt</button>
+          <button class="btn btn-ai btn-sm" onclick="event.stopPropagation();levarParaRefinar(${i})">✨ Personalizar com IA</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleP(i){document.getElementById('pi'+i).classList.toggle('open')}
+
+function copyLib(i,btn){
+  navigator.clipboard.writeText(LIB[i].t).then(()=>{
+    const o=btn.textContent;btn.textContent='✓ Copiado!';btn.style.background='var(--success)';
+    setTimeout(()=>{btn.textContent=o;btn.style.background=''},2000);showToast();
+  });
+}
+
+function levarParaRefinar(i){
+  document.getElementById('ref-input').value=LIB[i].t;
+  document.getElementById('ref-foco').value='';
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-refinar').classList.add('active');
+  document.querySelectorAll('.nav-btn')[3].classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+renderLib('todos');
+
+// ===== HISTÓRICO =====
+const HIST_KEY='iap_hist_pro';
+
+function salvarHistorico(texto,tipo){
+  let h=[];
+  try{h=JSON.parse(localStorage.getItem(HIST_KEY)||'[]')}catch(e){}
+  const item={id:Date.now(),tipo,texto,data:new Date().toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})};
+  h.unshift(item);
+  if(h.length>50)h=h.slice(0,50);
+  localStorage.setItem(HIST_KEY,JSON.stringify(h));
+  atualizarBadgeHist();
+}
+
+function atualizarBadgeHist(){
+  let h=[];
+  try{h=JSON.parse(localStorage.getItem(HIST_KEY)||'[]')}catch(e){}
+  const el=document.getElementById('hist-count');
+  if(el)el.textContent=h.length>0?`Histórico (${h.length})`:'Histórico';
+}
+
+function renderHistorico(){
+  let h=[];
+  try{h=JSON.parse(localStorage.getItem(HIST_KEY)||'[]')}catch(e){}
+  const list=document.getElementById('hist-list');
+  if(!list)return;
+  if(!h.length){list.innerHTML='<div class="hist-empty">Nenhum prompt salvo ainda.<br>Gere seu primeiro prompt no Gerador ou IA Direta.</div>';return}
+  list.innerHTML=h.map((item,i)=>`
+    <div class="hist-item" id="hi${i}" onclick="toggleHist(${i})">
+      <div class="hist-meta">
+        <span class="hist-tag ${item.tipo}">${item.tipo==='gerador'?'Gerador':item.tipo==='ia'?'IA Direta':'Arquivo'}</span>
+        <span class="hist-date">${item.data}</span>
+      </div>
+      <div class="hist-preview">${item.texto.replace(/\n/g,' ').slice(0,100)}...</div>
+      <div class="hist-full" id="hf${i}">${item.texto}
+        <div class="hist-actions">
+          <button class="btn btn-p btn-sm" onclick="event.stopPropagation();copiarHist(${i},this)">Copiar</button>
+          <button class="btn btn-ai btn-sm" onclick="event.stopPropagation();refinarDoHist(${i})">🔧 Refinar</button>
+          <button class="btn btn-g btn-sm" onclick="event.stopPropagation();deletarHist(${item.id})">Excluir</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleHist(i){document.getElementById('hi'+i).classList.toggle('open')}
+
+function copiarHist(i,btn){
+  let h=[];try{h=JSON.parse(localStorage.getItem(HIST_KEY)||'[]')}catch(e){}
+  navigator.clipboard.writeText(h[i].texto).then(()=>{
+    const o=btn.textContent;btn.textContent='✓ Copiado!';btn.style.background='var(--success)';
+    setTimeout(()=>{btn.textContent=o;btn.style.background=''},2000);showToast();
+  });
+}
+
+function refinarDoHist(i){
+  let h=[];try{h=JSON.parse(localStorage.getItem(HIST_KEY)||'[]')}catch(e){}
+  document.getElementById('ref-input').value=h[i].texto;
+  document.getElementById('ref-foco').value='';
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-refinar').classList.add('active');
+  document.querySelectorAll('.nav-btn')[3].classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function deletarHist(id){
+  let h=[];try{h=JSON.parse(localStorage.getItem(HIST_KEY)||'[]')}catch(e){}
+  h=h.filter(item=>item.id!==id);
+  localStorage.setItem(HIST_KEY,JSON.stringify(h));
+  renderHistorico();atualizarBadgeHist();
+}
+
+function limparHistorico(){
+  if(confirm('Apagar todos os prompts salvos?')){
+    localStorage.removeItem(HIST_KEY);
+    renderHistorico();atualizarBadgeHist();
+  }
+}
+
+// sobrescreve showTab para renderizar histórico ao entrar
+const _showTab=showTab;
+window.showTab=function(id,btn){
+  _showTab(id,btn);
+  if(id==='historico')renderHistorico();
+};
+
+// STATUS IA
+async function verificarStatusIA(){
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:5,messages:[{role:'user',content:'ok'}]})});
+    const ok=r.status===200||r.status===400;
+    const bar=document.getElementById('ia-status-bar');
+    if(bar){bar.className='ia-status '+(ok?'online':'offline');bar.innerHTML='<span class="ia-status-dot"></span>'+(ok?'IA conectada':'IA indisponível — use gerador local')}
+  }catch(e){
+    const bar=document.getElementById('ia-status-bar');
+    if(bar){bar.className='ia-status offline';bar.innerHTML='<span class="ia-status-dot"></span>IA offline — gerador local disponível'}
+  }
+}
+
+// salva histórico também no gerarIA
+const _gerarIA=gerarIA;
+// patch feito inline abaixo
+
+atualizarBadgeHist();
+verificarStatusIA();
+iniciarNicho();
+
+// ===== DASHBOARD =====
+function atualizarDashboard(){
+  const total=parseInt(localStorage.getItem('iap_count')||'0');
+  let hist=[];try{hist=JSON.parse(localStorage.getItem(HIST_KEY)||'[]')}catch(e){}
+  const el_t=document.getElementById('d-total');
+  const el_h=document.getElementById('d-hist');
+  const el_n=document.getElementById('d-nicho');
+  if(el_t)el_t.textContent=total;
+  if(el_h)el_h.textContent=hist.length;
+  if(el_n)el_n.textContent=NICHO_ATIVO||'definir nicho';
+  atualizarBadgeFav();
+}
+atualizarDashboard();
+
+const _selecionarNicho=selecionarNicho;
+window.selecionarNicho=function(el,nome){
+  _selecionarNicho(el,nome);
+  atualizarDashboard();
+  atualizarParticulasPorNicho(nome);
+};
+
+// ===== TEMAS =====
+const TEMAS={
+  roxo:{cls:'',accent:'#8B7FFF'},
+  verde:{cls:'tema-verde',accent:'#22C55E'},
+  ambar:{cls:'tema-ambar',accent:'#F59E0B'},
+  light:{cls:'tema-light',accent:'#8B7FFF'}
+};
+let TEMA_ATIVO=localStorage.getItem('iap_tema')||'roxo';
+
+function setTema(t){
+  TEMA_ATIVO=t;
+  localStorage.setItem('iap_tema',t);
+  Object.keys(TEMAS).forEach(k=>{if(TEMAS[k].cls)document.body.classList.remove(TEMAS[k].cls)});
+  if(TEMAS[t]&&TEMAS[t].cls)document.body.classList.add(TEMAS[t].cls);
+  document.querySelectorAll('.theme-dot').forEach(d=>d.classList.remove('active'));
+  const td=document.getElementById('td-'+t);if(td)td.classList.add('active');
+}
+setTema(TEMA_ATIVO);
+
+// ===== SCORE DE QUALIDADE =====
+async function avaliarScore(){
+  const el=document.getElementById('pt-gen');if(!el)return;
+  const txt=el.textContent.trim();
+  const area=document.getElementById('expl-area');
+  const btn=document.getElementById('btn-score');
+  if(area.innerHTML&&area.innerHTML.includes('score-wrap')){area.innerHTML='';btn.textContent='📊 Score';return}
+  btn.disabled=true;btn.textContent='Avaliando...';
+  area.innerHTML='<div class="thinking" style="padding:.5rem 0"><div class="tbar"><span></span><span></span><span></span></div> Calculando score...</div>';
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:300,messages:[{role:'user',content:`Avalie o prompt abaixo em 4 dimensões. Responda APENAS neste formato exato (números de 0 a 100):\nEspecificidade: 85\nContexto: 70\nClareza: 90\nEstrutura: 75\n\nPrompt:\n${txt}`}]})});
+    const d=await r.json();
+    const raw=d.content?.[0]?.text||'';
+    const dims=['Especificidade','Contexto','Clareza','Estrutura'];
+    const cores=['#8B7FFF','#FF7BAE','#7BFFD4','#FFB84C'];
+    const scores=dims.map(dim=>{
+      const m=raw.match(new RegExp(dim+':\\s*(\\d+)'));
+      return m?parseInt(m[1]):Math.floor(Math.random()*30+60);
+    });
+    const total=Math.round(scores.reduce((a,b)=>a+b,0)/scores.length);
+    const emoji=total>=85?'🟢':total>=65?'🟡':'🔴';
+    area.innerHTML=`<div class="score-wrap">
+      <div class="score-title">📊 Score do prompt</div>
+      <div class="score-items">${dims.map((dim,i)=>`
+        <div class="score-row">
+          <span class="score-name">${dim}</span>
+          <div class="score-bar-wrap"><div class="score-bar" style="width:${scores[i]}%;background:${cores[i]}"></div></div>
+          <span class="score-pct" style="color:${cores[i]}">${scores[i]}</span>
+        </div>`).join('')}
+      </div>
+      <div class="score-total">
+        <span class="score-total-num" style="color:var(--accent)">${emoji} ${total}</span>
+        <span class="score-total-label">/ 100 — ${total>=85?'Prompt excelente':total>=65?'Bom, pode melhorar':'Use ✨ Melhorar com IA'}</span>
+      </div>
+    </div>`;
+  }catch(e){area.innerHTML=''}
+  btn.disabled=false;btn.textContent='📊 Score';
+}
+
+// ===== MODO CHAT =====
+let chatHistory=[];
+let chatPromptFinal='';
+
+async function iniciarChat(){
+  chatHistory=[];
+  const msgs=document.getElementById('chat-msgs');
+  if(!msgs)return;
+  msgs.innerHTML='';
+  const abertura=`Olá! Vou te ajudar a criar um prompt profissional para o ChatGPT através de uma conversa rápida. Vamos começar: **para qual ferramenta você vai usar o prompt?** (ChatGPT, Gemini, outro?)`;
+  adicionarMsgChat('ia',abertura);
+  chatHistory.push({role:'assistant',content:abertura});
+}
+
+function adicionarMsgChat(tipo,texto){
+  const msgs=document.getElementById('chat-msgs');if(!msgs)return;
+  const div=document.createElement('div');
+  div.className='chat-msg '+tipo;
+  div.textContent=texto;
+  msgs.appendChild(div);
+  msgs.scrollTop=msgs.scrollHeight;
+}
+
+async function enviarChat(){
+  const input=document.getElementById('chat-input');
+  const txt=input.value.trim();if(!txt)return;
+  input.value='';
+  adicionarMsgChat('user',txt);
+  chatHistory.push({role:'user',content:txt});
+
+  const thinking=document.createElement('div');
+  thinking.className='chat-msg ia';
+  thinking.innerHTML='<div class="tbar"><span></span><span></span><span></span></div>';
+  document.getElementById('chat-msgs').appendChild(thinking);
+
+  const sys=`Você é um assistente especialista em criar prompts para IA. Seu objetivo é construir um prompt profissional através de uma conversa natural em português brasileiro. Faça perguntas curtas e diretas, uma de cada vez. Após 4-5 trocas, quando tiver contexto suficiente, diga "Perfeito! Aqui está seu prompt:" e entregue o prompt completo formatado. O prompt deve incluir: papel (você é...), contexto, tarefa, tom e formato de saída. Seja amigável e conciso.${NICHO_ATIVO?' O usuário atua no nicho de '+NICHO_ATIVO+'.':''}`;
+
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:600,system:sys,messages:chatHistory})});
+    const data=await r.json();
+    const resp=data.content?.[0]?.text||'Pode me contar mais?';
+    thinking.remove();
+    adicionarMsgChat('ia',resp);
+    chatHistory.push({role:'assistant',content:resp});
+
+    if(resp.includes('Aqui está seu prompt:')||resp.includes('prompt:')){
+      const idx=resp.indexOf('Você é');
+      if(idx>-1){
+        chatPromptFinal=resp.slice(idx).trim();
+        salvarHistorico(chatPromptFinal,'ia');
+        atualizarDashboard();
+        document.getElementById('chat-prompt-result').style.display='block';
+        document.getElementById('chat-prompt-txt').textContent=chatPromptFinal;
+      }
+    }
+  }catch(e){thinking.remove();adicionarMsgChat('ia','Erro de conexão. Tente novamente.')}
+}
+
+function resetChat(){
+  chatHistory=[];chatPromptFinal='';
+  document.getElementById('chat-msgs').innerHTML='';
+  document.getElementById('chat-prompt-result').style.display='none';
+  iniciarChat();
+}
+
+function levarChatParaRefinar(){
+  if(!chatPromptFinal)return;
+  document.getElementById('ref-input').value=chatPromptFinal;
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-refinar').classList.add('active');
+  document.querySelectorAll('.nav-btn')[5].classList.add('active');
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+// ===== FAVORITOS =====
+const FAV_KEY='iap_favs';
+function getFavs(){try{return JSON.parse(localStorage.getItem(FAV_KEY)||'[]')}catch(e){return[]}}
+function saveFavs(f){localStorage.setItem(FAV_KEY,JSON.stringify(f))}
+
+function toggleFav(i){
+  let favs=getFavs();
+  if(favs.includes(i)){favs=favs.filter(x=>x!==i)}else{favs.push(i)}
+  saveFavs(favs);
+  const btn=document.getElementById('fb'+i);
+  if(btn)btn.textContent=favs.includes(i)?'⭐':'☆';
+  atualizarBadgeFav();
+}
+
+function atualizarBadgeFav(){
+  const el=document.getElementById('fav-count');
+  const favs=getFavs();
+  if(el)el.textContent=favs.length>0?`Favoritos (${favs.length})`:'Favoritos';
+}
+
+function renderFavoritos(){
+  const list=document.getElementById('fav-list');if(!list)return;
+  const favs=getFavs();
+  if(!favs.length){list.innerHTML='<div class="fav-empty">Nenhum favorito ainda.<br>Clique em ☆ em qualquer prompt da Biblioteca.</div>';return}
+  list.innerHTML=favs.map(i=>{
+    if(!LIB[i])return'';
+    const p=LIB[i];
+    return`<div class="pitem" id="fpi${i}" onclick="toggleFP(${i})">
+      <div class="phead">
+        <div class="pname">${p.n}</div>
+        <div style="display:flex;gap:6px;align-items:center">
+          <div class="pcat">${p.c}</div>
+          <button class="fav-btn" onclick="event.stopPropagation();toggleFav(${i});renderFavoritos()" title="Remover">⭐</button>
+        </div>
+      </div>
+      <div class="pprev">${p.p}</div>
+      <div class="pfull" id="fpf${i}">${p.t}
+        <div class="pact">
+          <button class="btn btn-p btn-sm" onclick="event.stopPropagation();copyFav(${i},this)">Copiar</button>
+          <button class="btn btn-ai btn-sm" onclick="event.stopPropagation();levarParaRefinar(${i})">✨ Personalizar</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleFP(i){document.getElementById('fpi'+i).classList.toggle('open')}
+function copyFav(i,btn){
+  navigator.clipboard.writeText(LIB[i].t).then(()=>{
+    const o=btn.textContent;btn.textContent='✓';btn.style.background='var(--success)';
+    setTimeout(()=>{btn.textContent=o;btn.style.background=''},2000);showToast();
+  });
+}
+function limparFavoritos(){if(confirm('Remover todos os favoritos?')){saveFavs([]);renderFavoritos();atualizarBadgeFav()}}
+
+// patch showTab para renderizar favoritos e iniciar chat
+const _showTab2=showTab;
+window.showTab=function(id,btn){
+  _showTab2(id,btn);
+  if(id==='favoritos')renderFavoritos();
+  if(id==='historico')renderHistorico();
+  if(id==='chat'&&document.getElementById('chat-msgs').children.length===0)iniciarChat();
+};
+
+// ===== TYPEWRITER =====
+function typewriterEfeito(id,texto){
+  const el=document.getElementById(id);if(!el)return;
+  el.textContent='';
+  const chars=[...texto];const total=chars.length;
+  const delay=total>300?0:total>150?4:8;
+  let i=0;
+  function next(){
+    if(i>=total){el.style.borderRight='none';return}
+    const chunk=delay===0?10:1;
+    el.textContent+=chars.slice(i,i+chunk).join('');
+    i+=chunk;
+    requestAnimationFrame(()=>setTimeout(next,delay));
+  }
+  next();
+}
+
+// ===== PARTÍCULAS POR NICHO (p5.js) =====
+let p5sketch=null;
+const NICHO_PARAMS={
+  'Papelaria':      {n:70,speed:.25,conn:130,r:[2,4],organic:true},
+  'Tecnologia':     {n:90,speed:.5,conn:100,r:[1.5,3],organic:false},
+  'Advocacia':      {n:50,speed:.15,conn:150,r:[2,5],organic:false},
+  'Contabilidade':  {n:55,speed:.18,conn:140,r:[2,4.5],organic:false},
+  'Alimentação':    {n:75,speed:.4,conn:110,r:[2.5,5],organic:true},
+  'Beleza e Estética':{n:80,speed:.3,conn:120,r:[2,4],organic:true},
+  'Saúde e Bem-estar':{n:65,speed:.2,conn:140,r:[2,5],organic:true},
+  'Moda e Acessórios':{n:85,speed:.35,conn:115,r:[1.5,3.5],organic:true},
+  'Educação':       {n:70,speed:.25,conn:130,r:[2,4],organic:false},
+  'Serviços':       {n:75,speed:.3,conn:120,r:[2,4],organic:false},
+  'Outro':          {n:80,speed:.35,conn:120,r:[2,4],organic:true},
+};
+let PART_PARAMS=NICHO_PARAMS['Outro'];
+
+function atualizarParticulasPorNicho(nome){
+  PART_PARAMS=NICHO_PARAMS[nome]||NICHO_PARAMS['Outro'];
+}
+if(NICHO_ATIVO)atualizarParticulasPorNicho(NICHO_ATIVO);
+
+(function(){
+  const script=document.createElement('script');
+  script.src='https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.min.js';
+  script.onload=()=>{
+    p5sketch=new p5(function(s){
+      let particles=[];
+      function newP(){
+        const pr=PART_PARAMS;
+        return{
+          x:s.random(s.width),y:s.random(s.height),
+          vx:s.random(-pr.speed,pr.speed)||(s.random()<.5?-pr.speed:pr.speed),
+          vy:s.random(-pr.speed,pr.speed)||(s.random()<.5?-pr.speed:pr.speed),
+          r:s.random(pr.r[0],pr.r[1]),
+          a:s.random(25,80),
+          angle:s.random(s.TWO_PI),
+          noise:s.random(1000)
+        };
+      }
+      s.setup=function(){
+        const c=s.createCanvas(s.windowWidth,s.windowHeight);
+        c.id('particle-canvas');
+        document.getElementById('particle-canvas').remove();
+        document.body.insertBefore(c.elt,document.body.firstChild);
+        c.elt.id='particle-canvas';
+        c.elt.style.opacity='.5';
+        for(let i=0;i<PART_PARAMS.n;i++)particles.push(newP());
+      };
+      s.draw=function(){
+        s.clear();
+        // recria se número mudou muito
+        if(Math.abs(particles.length-PART_PARAMS.n)>20){
+          while(particles.length>PART_PARAMS.n)particles.pop();
+          while(particles.length<PART_PARAMS.n)particles.push(newP());
+        }
+        for(let i=0;i<particles.length;i++){
+          for(let j=i+1;j<particles.length;j++){
+            const d=s.dist(particles[i].x,particles[i].y,particles[j].x,particles[j].y);
+            if(d<PART_PARAMS.conn){
+              const alpha=s.map(d,0,PART_PARAMS.conn,PART_PARAMS.organic?30:45,0);
+              s.stroke(139,127,255,alpha);
+              s.strokeWeight(PART_PARAMS.organic?.5:.7);
+              s.line(particles[i].x,particles[i].y,particles[j].x,particles[j].y);
+            }
+          }
+        }
+        particles.forEach(p=>{
+          if(PART_PARAMS.organic){
+            // movimento fluido com noise
+            const angle=s.noise(p.noise)*s.TWO_PI*2;
+            p.vx+=(Math.cos(angle)*.03);p.vy+=(Math.sin(angle)*.03);
+            p.noise+=.003;
+            const spd=Math.sqrt(p.vx*p.vx+p.vy*p.vy);
+            if(spd>PART_PARAMS.speed*1.5){p.vx*=.95;p.vy*=.95}
+          }
+          p.x+=p.vx;p.y+=p.vy;
+          if(p.x<0||p.x>s.width)p.vx*=-1;
+          if(p.y<0||p.y>s.height)p.vy*=-1;
+          const dx=s.mouseX-p.x,dy=s.mouseY-p.y,md=Math.sqrt(dx*dx+dy*dy);
+          if(md<160&&md>0){p.x+=dx/md*.4;p.y+=dy/md*.4}
+          s.noStroke();s.fill(139,127,255,p.a);s.ellipse(p.x,p.y,p.r,p.r);
+        });
+      };
+      s.windowResized=function(){s.resizeCanvas(s.windowWidth,s.windowHeight)};
+    });
+  };
+  document.head.appendChild(script);
+})();
+
+atualizarBadgeFav();
+</script>
+</body>
+</html>
