@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IApronto — Gerador de Prompts</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,400&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0D0D14;
+  --surface:#13131F;
+  --surface2:#1A1A2A;
+  --border:#2A2A3E;
+  --border2:#3A3A58;
+  --accent:#7C6EFA;
+  --accent2:#FA6E9E;
+  --accentglow:rgba(124,110,250,0.18);
+  --text:#F0EFF8;
+  --muted:#8A8AA8;
+  --muted2:#5A5A78;
+  --success:#2ECC8A;
+  --r:14px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden}
+
+/* BG grid */
+body::before{
+  content:'';position:fixed;inset:0;
+  background-image:linear-gradient(rgba(124,110,250,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(124,110,250,0.03) 1px,transparent 1px);
+  background-size:48px 48px;pointer-events:none;z-index:0
+}
+
+.wrap{max-width:760px;margin:0 auto;padding:0 1.25rem 5rem;position:relative;z-index:1}
+
+/* HEADER */
+.header{padding:3.5rem 0 2.5rem;text-align:center}
+.logo-pill{display:inline-flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border2);border-radius:50px;padding:.45rem 1.1rem;margin-bottom:1.5rem;font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:3px;color:var(--accent)}
+.logo-dot{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent)}
+.header h1{font-family:'Syne',sans-serif;font-size:clamp(1.8rem,5vw,2.6rem);font-weight:800;line-height:1.15;margin-bottom:.75rem;letter-spacing:-0.02em}
+.header h1 span{background:linear-gradient(135deg,var(--accent),var(--accent2));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.header p{font-size:15px;color:var(--muted);max-width:480px;margin:0 auto;line-height:1.7}
+.badge-basico{display:inline-flex;align-items:center;gap:6px;margin-top:1.25rem;background:rgba(124,110,250,0.1);border:1px solid rgba(124,110,250,0.3);border-radius:50px;padding:.35rem 1rem;font-size:12px;font-weight:500;color:var(--accent)}
+
+/* NAV TABS */
+.nav{display:flex;gap:4px;margin:2rem 0 1.75rem;background:var(--surface);border:1px solid var(--border);border-radius:50px;padding:5px}
+.nav-btn{flex:1;padding:.65rem .5rem;border:none;background:transparent;border-radius:40px;font-family:'Syne',sans-serif;font-size:12px;font-weight:700;cursor:pointer;color:var(--muted);transition:all .25s;letter-spacing:.5px;white-space:nowrap}
+.nav-btn.active{background:var(--accent);color:#fff;box-shadow:0 2px 16px rgba(124,110,250,0.4)}
+
+.section{display:none;animation:fadeUp .3s ease}
+.section.active{display:block}
+@keyframes fadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.5rem}
+.card+.card{margin-top:1rem}
+
+/* STEPS */
+.step-track{display:flex;align-items:center;gap:0;margin-bottom:2rem}
+.step-dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;flex-shrink:0;transition:all .3s}
+.step-dot.done{background:var(--success);color:#0D0D14}
+.step-dot.active{background:var(--accent);color:#fff;box-shadow:0 0 16px rgba(124,110,250,0.5)}
+.step-dot.pending{background:var(--surface2);color:var(--muted2);border:1px solid var(--border)}
+.step-line{flex:1;height:2px;background:var(--border);transition:background .3s}
+.step-line.done{background:var(--success)}
+
+.step-panel{display:none}
+.step-panel.active{display:block;animation:fadeUp .3s ease}
+
+.step-eyebrow{font-family:'Syne',sans-serif;font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:.4rem}
+.step-title{font-family:'Syne',sans-serif;font-size:1.25rem;font-weight:800;margin-bottom:.35rem}
+.step-desc{font-size:14px;color:var(--muted);margin-bottom:1.5rem;line-height:1.6}
+
+/* CHIPS */
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:1.5rem}
+.chip{padding:.55rem 1.1rem;border-radius:50px;border:1px solid var(--border2);background:var(--surface2);font-size:13px;font-weight:500;cursor:pointer;transition:all .2s;color:var(--muted)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+.chip.sel{background:rgba(124,110,250,0.15);border-color:var(--accent);color:var(--accent)}
+
+/* INPUTS */
+.field-label{display:block;font-size:12px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--muted);margin-bottom:.5rem;font-family:'Syne',sans-serif}
+.field-hint{font-size:12px;color:var(--muted2);margin-bottom:.65rem;line-height:1.5}
+textarea,input[type=text]{
+  width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:10px;
+  padding:.75rem 1rem;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);
+  outline:none;transition:border .2s;resize:vertical
+}
+textarea:focus,input[type=text]:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accentglow)}
+textarea{min-height:88px}
+.spacer{height:1rem}
+
+/* BUTTONS */
+.btn{padding:.75rem 1.5rem;border-radius:50px;border:none;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;cursor:pointer;transition:all .2s;letter-spacing:.8px;display:inline-flex;align-items:center;gap:6px}
+.btn-primary{background:var(--accent);color:#fff;box-shadow:0 4px 16px rgba(124,110,250,0.35)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(124,110,250,0.45)}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border2)}
+.btn-ghost:hover{color:var(--text);border-color:var(--border2)}
+.btn-sm{padding:.5rem 1rem;font-size:11px}
+.btn-row{display:flex;gap:10px;margin-top:1.5rem;flex-wrap:wrap;align-items:center}
+
+/* RESULTADO */
+.result-box{background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:1.25rem;margin-top:1.25rem;position:relative}
+.result-eyebrow{font-size:10px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--accent);margin-bottom:.75rem;font-family:'Syne',sans-serif}
+.prompt-text{font-size:14px;line-height:1.85;color:var(--text);white-space:pre-wrap;min-height:60px}
+.copy-btn{position:absolute;top:1rem;right:1rem;background:var(--surface);border:1px solid var(--border2);border-radius:8px;padding:.35rem .75rem;font-size:10px;font-weight:800;color:var(--accent);cursor:pointer;font-family:'Syne',sans-serif;letter-spacing:1px;transition:all .2s}
+.copy-btn:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+
+/* BIBLIOTECA */
+.cat-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1.5rem}
+.cat-pill{padding:.4rem .9rem;border-radius:50px;border:1px solid var(--border2);background:transparent;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .2s;font-family:'Syne',sans-serif}
+.cat-pill.active{background:rgba(124,110,250,0.15);border-color:var(--accent);color:var(--accent)}
+
+.p-grid{display:grid;gap:8px}
+.p-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:1rem 1.1rem;cursor:pointer;transition:all .2s}
+.p-item:hover{border-color:var(--border2);transform:translateY(-1px)}
+.p-item.open{border-color:var(--accent);background:var(--surface2)}
+.p-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:.3rem}
+.p-name{font-family:'Syne',sans-serif;font-size:13px;font-weight:700;color:var(--text)}
+.p-cat{font-size:10px;font-weight:700;letter-spacing:1px;padding:.2rem .6rem;border-radius:50px;background:rgba(124,110,250,0.12);color:var(--accent);white-space:nowrap;font-family:'Syne',sans-serif}
+.p-preview{font-size:13px;color:var(--muted);line-height:1.5}
+.p-full{font-size:13px;line-height:1.85;color:var(--text);margin-top:.85rem;padding-top:.85rem;border-top:1px solid var(--border);display:none}
+.p-item.open .p-full{display:block}
+.p-actions{display:flex;gap:8px;margin-top:.85rem}
+
+/* LOCK */
+.lock-banner{background:linear-gradient(135deg,rgba(124,110,250,0.12),rgba(250,110,158,0.08));border:1px solid rgba(124,110,250,0.35);border-radius:var(--r);padding:1.5rem;text-align:center;margin-top:.5rem}
+.lock-icon{font-size:2rem;margin-bottom:.75rem}
+.lock-title{font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;margin-bottom:.4rem}
+.lock-desc{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:1.25rem}
+.btn-upgrade{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;padding:.75rem 1.75rem;border-radius:50px;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;cursor:pointer;letter-spacing:.8px;box-shadow:0 4px 20px rgba(124,110,250,0.4);transition:all .2s}
+.btn-upgrade:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(124,110,250,0.5)}
+
+/* FOOTER */
+.footer{text-align:center;padding:2.5rem 0 0;border-top:1px solid var(--border);margin-top:3rem}
+.footer-logo{font-family:'Syne',sans-serif;font-size:13px;font-weight:800;color:var(--accent);letter-spacing:2px;margin-bottom:.35rem}
+.footer-text{font-size:12px;color:var(--muted2)}
+
+/* UPSELL CONTEXTUAL */
+.upsell-strip{background:linear-gradient(135deg,rgba(124,110,250,0.12),rgba(250,110,158,0.08));border:1px solid rgba(124,110,250,0.3);border-radius:var(--r);padding:1rem 1.25rem;margin-top:1rem;display:flex;gap:.75rem;align-items:center;flex-wrap:wrap}
+.upsell-strip strong{font-family:'Syne',sans-serif;font-size:12px;font-weight:800;color:var(--text);display:block;margin-bottom:.15rem}
+.upsell-strip span{font-size:12px;color:var(--muted)}
+.btn-upsell-sm{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;border:none;padding:.5rem 1rem;border-radius:50px;font-family:'Syne',sans-serif;font-size:11px;font-weight:800;cursor:pointer;white-space:nowrap;box-shadow:0 2px 10px rgba(124,110,250,0.35);transition:all .2s;flex-shrink:0}
+.btn-upsell-sm:hover{transform:translateY(-1px)}
+
+/* CANVAS PARTÍCULAS */
+#particle-canvas{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:.45}
+
+/* CONTADOR */
+.counter-bar{display:inline-flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border2);border-radius:50px;padding:.3rem 1rem;font-size:11px;color:var(--muted);font-family:'Syne',sans-serif;font-weight:600;margin-top:.75rem}
+.counter-bar .cval{color:var(--accent);font-weight:800}
+
+/* TYPEWRITER */
+.typing-text{display:inline-block;white-space:pre-wrap;word-break:break-word;border-right:2px solid var(--accent);animation:blink-cur .75s step-end 8 forwards;line-height:1.85;font-size:14px;color:var(--text)}
+@keyframes blink-cur{0%,100%{border-color:transparent}50%{border-color:var(--accent)}}
+
+/* UPSELL CONTRASTE — aparece após resultado */
+.pro-preview{background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);padding:1rem 1.25rem;margin-top:.75rem}
+.pro-preview-title{font-family:'Syne',sans-serif;font-size:10px;font-weight:800;letter-spacing:2px;text-transform:uppercase;color:var(--muted2);margin-bottom:.75rem}
+.pro-features{display:grid;gap:6px;margin-bottom:1rem}
+.pro-feat{display:flex;align-items:center;gap:.6rem;font-size:12px;color:var(--muted)}
+.pro-feat .feat-icon{width:22px;height:22px;border-radius:6px;background:rgba(124,110,250,0.12);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0}
+.pro-feat .feat-locked{font-size:10px;background:rgba(124,110,250,0.1);border:1px solid rgba(124,110,250,0.2);border-radius:50px;padding:.1rem .5rem;color:var(--accent);font-family:'Syne',sans-serif;font-weight:700;margin-left:auto;white-space:nowrap}
+
+/* TOAST */
+.toast{position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(20px);background:var(--success);color:#0D0D14;padding:.65rem 1.5rem;border-radius:50px;font-family:'Syne',sans-serif;font-size:12px;font-weight:800;letter-spacing:1px;opacity:0;transition:all .3s;z-index:999;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+@media(max-width:500px){
+  .header h1{font-size:1.6rem}
+  .nav-btn{font-size:11px;padding:.55rem .3rem}
+}
+</style>
+</head>
+<body>
+
+<canvas id="particle-canvas"></canvas>
+
+<div class="wrap">
+
+  <div class="header">
+    <div class="logo-pill"><span class="logo-dot"></span>IAPRONTO</div>
+    <h1>Prompts que fazem o<br><span>ChatGPT trabalhar por você</span></h1>
+    <p>Responda 4 perguntas simples e receba um prompt profissional pronto para usar. Sem complicação.</p>
+    <div class="badge-basico">✦ Versão Básico</div>
+    <div class="counter-bar" id="counter-bar">🎯 <span class="cval" id="cval">0</span> prompts gerados</div>
+  </div>
+
+  <div class="nav">
+    <button class="nav-btn active" onclick="showTab('gerador',this)">🎯 Gerador</button>
+    <button class="nav-btn" onclick="showTab('biblioteca',this)">📚 Biblioteca</button>
+    <button class="nav-btn" onclick="showTab('ajuda',this)">💡 Como usar</button>
+    <button class="nav-btn" onclick="showTab('arquivo',this)">📎 Arquivo</button>
+  </div>
+
+  <!-- ====== GERADOR ====== -->
+  <div class="section active" id="tab-gerador">
+
+    <div class="step-track" id="track">
+      <div class="step-dot active" id="sd1">1</div>
+      <div class="step-line" id="sl1"></div>
+      <div class="step-dot pending" id="sd2">2</div>
+      <div class="step-line" id="sl2"></div>
+      <div class="step-dot pending" id="sd3">3</div>
+      <div class="step-line" id="sl3"></div>
+      <div class="step-dot pending" id="sd4">4</div>
+    </div>
+
+    <!-- S1 -->
+    <div class="step-panel active" id="sp1">
+      <div class="step-eyebrow">Passo 1 de 4</div>
+      <div class="step-title">Para que você vai usar?</div>
+      <div class="step-desc">Escolha o objetivo principal da sua tarefa com o ChatGPT.</div>
+      <div class="chips">
+        <span class="chip" onclick="pick(this,'obj')">Criar texto ou post</span>
+        <span class="chip" onclick="pick(this,'obj')">Responder e-mail</span>
+        <span class="chip" onclick="pick(this,'obj')">Fazer um plano</span>
+        <span class="chip" onclick="pick(this,'obj')">Analisar algo</span>
+        <span class="chip" onclick="pick(this,'obj')">Criar legenda</span>
+        <span class="chip" onclick="pick(this,'obj')">Tirar uma dúvida</span>
+        <span class="chip" onclick="pick(this,'obj')">Outro objetivo</span>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-primary" onclick="goStep(2)">Próximo →</button>
+      </div>
+    </div>
+
+    <!-- S2 -->
+    <div class="step-panel" id="sp2">
+      <div class="step-eyebrow">Passo 2 de 4</div>
+      <div class="step-title">Descreva o que você precisa</div>
+      <div class="step-desc">Quanto mais detalhe, mais preciso fica o resultado.</div>
+      <label class="field-label">Sobre o que é?</label>
+      <div class="field-hint">Ex: quero um post para o Instagram da minha loja de papelaria anunciando uma promoção de volta às aulas</div>
+      <textarea id="f-tema" placeholder="Escreva aqui..."></textarea>
+      <div class="spacer"></div>
+      <label class="field-label">Quem é o seu público? <span style="text-transform:none;font-weight:400;letter-spacing:0;color:var(--muted2)">(opcional)</span></label>
+      <input type="text" id="f-publico" placeholder="Ex: mães com filhos em idade escolar" />
+      <div class="btn-row">
+        <button class="btn btn-ghost btn-sm" onclick="goStep(1)">← Voltar</button>
+        <button class="btn btn-primary" onclick="goStep(3)">Próximo →</button>
+      </div>
+    </div>
+
+    <!-- S3 -->
+    <div class="step-panel" id="sp3">
+      <div class="step-eyebrow">Passo 3 de 4</div>
+      <div class="step-title">Como você quer que ele responda?</div>
+      <div class="step-desc">Escolha o tom e o formato da resposta.</div>
+      <label class="field-label">Tom</label>
+      <div class="chips">
+        <span class="chip" onclick="pick(this,'tom')">Profissional</span>
+        <span class="chip" onclick="pick(this,'tom')">Descontraído</span>
+        <span class="chip" onclick="pick(this,'tom')">Persuasivo</span>
+        <span class="chip" onclick="pick(this,'tom')">Simples e direto</span>
+        <span class="chip" onclick="pick(this,'tom')">Empático</span>
+        <span class="chip" onclick="pick(this,'tom')">Criativo</span>
+      </div>
+      <label class="field-label">Formato de saída <span style="text-transform:none;font-weight:400;letter-spacing:0;color:var(--muted2)">(opcional)</span></label>
+      <input type="text" id="f-formato" placeholder='Ex: em tópicos, máximo 5 linhas, com emojis...' />
+      <div class="btn-row">
+        <button class="btn btn-ghost btn-sm" onclick="goStep(2)">← Voltar</button>
+        <button class="btn btn-primary" onclick="goStep(4)">Gerar Prompt ✦</button>
+      </div>
+    </div>
+
+    <!-- S4 RESULTADO -->
+    <div class="step-panel" id="sp4">
+      <div class="step-eyebrow">Pronto!</div>
+      <div class="step-title">Seu prompt profissional</div>
+      <div class="step-desc">Copie e cole direto no ChatGPT. É só isso.</div>
+      <div id="result-area"></div>
+      <div id="pro-preview-area"></div>
+      <div class="btn-row" style="margin-top:1.5rem">
+        <button class="btn btn-ghost btn-sm" onclick="resetGen()">↺ Criar outro</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ====== BIBLIOTECA ====== -->
+  <div class="section" id="tab-biblioteca">
+    <div style="margin-bottom:1.25rem">
+      <div style="font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:800;margin-bottom:.3rem">Prompts prontos para usar</div>
+      <div style="font-size:14px;color:var(--muted)">5 prompts incluídos na versão Básico. Clique para expandir e copiar.</div>
+    </div>
+    <div class="cat-row" id="cat-row">
+      <span class="cat-pill active" onclick="filterLib(this,'todos')">Todos</span>
+      <span class="cat-pill" onclick="filterLib(this,'social media')">Social Media</span>
+      <span class="cat-pill" onclick="filterLib(this,'negócios')">Negócios</span>
+      <span class="cat-pill" onclick="filterLib(this,'vendas')">Vendas</span>
+      <span class="cat-pill" onclick="filterLib(this,'lojistas')">🏪 Lojistas</span>
+    </div>
+    <div class="p-grid" id="p-grid"></div>
+    <div class="lock-banner" style="margin-top:1.25rem">
+      <div class="lock-icon">🔒</div>
+      <div class="lock-title">Mais 15 prompts na versão Pro</div>
+      <div class="lock-desc">Acesse toda a biblioteca com prompts de produtividade, e-mails profissionais, roteiros, análise de negócio e muito mais — além da IA integrada que gera prompts sob medida para você.</div>
+      <button class="btn-upgrade" onclick="window.open('https://pay.kiwify.com.br/pOiDeGS','_blank')">Quero o Pro →</button>
+    </div>
+  </div>
+
+  <!-- ====== COMO USAR ====== -->
+  <div class="section" id="tab-ajuda">
+    <div class="card">
+      <div style="font-family:'Syne',sans-serif;font-size:1.1rem;font-weight:800;margin-bottom:1.25rem">Como usar o IApronto</div>
+      <div style="display:grid;gap:1rem">
+        <div style="display:flex;gap:1rem;align-items:flex-start">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(124,110,250,0.15);border:1px solid rgba(124,110,250,0.3);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:var(--accent);flex-shrink:0">1</div>
+          <div><div style="font-weight:600;font-size:14px;margin-bottom:.2rem">Vá até a aba Gerador</div><div style="font-size:13px;color:var(--muted);line-height:1.6">Responda as 4 perguntas guiadas. Não precisa ser perfeito — qualquer resposta já gera um prompt muito melhor que o que a maioria das pessoas usa.</div></div>
+        </div>
+        <div style="display:flex;gap:1rem;align-items:flex-start">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(124,110,250,0.15);border:1px solid rgba(124,110,250,0.3);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:var(--accent);flex-shrink:0">2</div>
+          <div><div style="font-weight:600;font-size:14px;margin-bottom:.2rem">Copie o prompt gerado</div><div style="font-size:13px;color:var(--muted);line-height:1.6">Clique em "COPIAR" e cole direto no ChatGPT, no campo de mensagem. Simples assim.</div></div>
+        </div>
+        <div style="display:flex;gap:1rem;align-items:flex-start">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(124,110,250,0.15);border:1px solid rgba(124,110,250,0.3);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:var(--accent);flex-shrink:0">3</div>
+          <div><div style="font-weight:600;font-size:14px;margin-bottom:.2rem">Use a Biblioteca para prompts prontos</div><div style="font-size:13px;color:var(--muted);line-height:1.6">Você não precisa gerar sempre do zero. A biblioteca tem prompts testados para as situações mais comuns. Clique, copie e use.</div></div>
+        </div>
+        <div style="display:flex;gap:1rem;align-items:flex-start">
+          <div style="width:36px;height:36px;border-radius:50%;background:rgba(250,110,158,0.12);border:1px solid rgba(250,110,158,0.3);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:13px;color:var(--accent2);flex-shrink:0">✦</div>
+          <div><div style="font-weight:600;font-size:14px;margin-bottom:.2rem">Dica: seja específico</div><div style="font-size:13px;color:var(--muted);line-height:1.6">Quanto mais contexto você colocar (seu nicho, seu público, o objetivo exato), mais poderoso fica o resultado no ChatGPT.</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lock-banner" style="margin-top:1.25rem">
+      <div class="lock-icon">✨</div>
+      <div class="lock-title">Quer prompts gerados por IA, na hora?</div>
+      <div class="lock-desc">Na versão Pro, você descreve o que precisa em palavras normais e a IA gera o prompt perfeito para você — sem responder perguntas, sem template, sem limite.</div>
+      <button class="btn-upgrade" onclick="window.open('https://pay.kiwify.com.br/pOiDeGS','_blank')">Conhecer o Pro →</button>
+    </div>
+  </div>
+
+  <!-- ====== ARQUIVO (bloqueado) ====== -->
+  <div class="section" id="tab-arquivo">
+    <div style="margin-bottom:1.25rem">
+      <div style="font-family:'Syne',sans-serif;font-size:1.15rem;font-weight:800;margin-bottom:.3rem">Analisar Imagem ou Arquivo</div>
+      <div style="font-size:14px;color:var(--muted)">Sobe uma imagem ou texto e a IA cria um prompt baseado no que ela encontrar.</div>
+    </div>
+
+    <!-- dropzone visual bloqueada -->
+    <div style="border:2px dashed var(--border);border-radius:var(--r);padding:2.5rem 1.5rem;text-align:center;opacity:.45;pointer-events:none;background:var(--surface)">
+      <div style="font-size:2.2rem;margin-bottom:.75rem">📎</div>
+      <div style="font-family:'Syne',sans-serif;font-weight:700;font-size:14px;margin-bottom:.3rem">Clique para escolher o arquivo</div>
+      <div style="font-size:12px;color:var(--muted2)">Imagens (JPG, PNG, WEBP) ou texto (TXT)</div>
+    </div>
+
+    <div class="lock-banner" style="margin-top:1.25rem">
+      <div class="lock-icon">🔒</div>
+      <div class="lock-title">Recurso exclusivo do Pro</div>
+      <div class="lock-desc">Com o Pro você sobe uma foto do seu produto, um texto rascunho ou qualquer imagem — e a IA analisa e gera um prompt completo baseado no que encontrar. Funciona com imagens, fotos e arquivos de texto.</div>
+      <button class="btn-upgrade" onclick="window.open('https://pay.kiwify.com.br/pOiDeGS','_blank')">Desbloquear no Pro →</button>
+    </div>
+
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:1.1rem;margin-top:1rem;opacity:.6">
+      <div style="font-family:'Syne',sans-serif;font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--accent);margin-bottom:.6rem">O QUE VOCÊ PODERÁ FAZER</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.9">
+        📸 Sobe a foto de um produto → IA gera prompt para descrição ou legenda<br>
+        📄 Sobe um texto rascunho → IA gera prompt para reescrever ou melhorar<br>
+        🖼️ Sobe imagem de referência → IA cria prompt para Midjourney ou DALL-E
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    <div class="footer-logo">IAPRONTO</div>
+    <div class="footer-text">Versão Básico · Feito para quem quer resultado, não curso.</div>
+  </div>
+
+</div>
+
+<div class="toast" id="toast">✓ COPIADO</div>
+
+<script>
+const SEL={};
+
+const LIB=[
+  {n:"Post de vendas para Instagram",c:"social media",p:"Gera post persuasivo com CTA",t:"Você é especialista em copywriting para redes sociais. Crie um post de vendas para o Instagram sobre [PRODUTO/SERVIÇO]. Público-alvo: [PÚBLICO]. Use linguagem descontraída, inclua emojis, destaque o principal benefício e finalize com uma chamada para ação clara. Máximo 150 palavras."},
+  {n:"Resposta a cliente insatisfeito",c:"vendas",p:"Mantém o cliente e protege sua reputação",t:"Você é especialista em atendimento ao cliente. Redija uma resposta profissional e empática para um cliente que reclamou de [PROBLEMA]. Reconheça o problema sem excesso de desculpas, ofereça uma solução concreta e mantenha o tom cordial. Máximo 3 parágrafos."},
+  {n:"E-mail de proposta comercial",c:"negócios",p:"Proposta clara que converte",t:"Você é consultor de vendas. Redija um e-mail de proposta para [PRODUTO/SERVIÇO] direcionado a [TIPO DE CLIENTE]. Inclua: assunto impactante, apresentação rápida da solução, 3 benefícios principais e CTA claro. Tom profissional, máximo 250 palavras."},
+  {n:"Plano de conteúdo para 1 semana",c:"social media",p:"7 dias de posts organizados",t:"Crie um plano de conteúdo para 7 dias para o Instagram de um negócio de [NICHO]. Para cada dia inclua: tema do post, formato (carrossel, reels, foto), legenda curta e 3 hashtags. Objetivo: engajamento e autoridade. Tom: [ESCOLHA]."},
+  {n:"Análise de ideia de negócio",c:"negócios",p:"Pontos fortes, riscos e oportunidades",t:"Analise esta ideia de negócio como consultor experiente: [DESCREVA SUA IDEIA]. Estruture a resposta em: 1) Pontos fortes, 2) Riscos e pontos fracos, 3) Oportunidades de mercado, 4) Próximos passos recomendados. Seja honesto e direto."},
+  {n:"Mensagem WhatsApp — cliente sumido",c:"lojistas",p:"Recupera cliente sem parecer spam",t:"Você é especialista em relacionamento com clientes para pequenos negócios. Escreva uma mensagem de WhatsApp curta e amigável para um cliente que não compra há [TEMPO] meses. A mensagem deve: parecer pessoal (não spam), mencionar algo específico da loja [NOME/NICHO], oferecer uma vantagem exclusiva para ele voltar, e ter no máximo 5 linhas. Tom caloroso e próximo, sem parecer venda forçada."},
+  {n:"Descrição de produto — catálogo WhatsApp",c:"lojistas",p:"Descrição que vende pelo celular",t:"Você é especialista em vendas pelo WhatsApp para pequenas lojas. Escreva uma descrição de produto para catálogo do WhatsApp Business sobre [PRODUTO]. A descrição deve ter: nome comercial atrativo, 3 a 4 linhas com benefícios (não só especificações), informação de variações se houver, e preço formatado. Tom direto e persuasivo. Máximo 80 palavras."},
+];
+
+function showTab(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tab-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+function pick(el,g){
+  document.querySelectorAll('.chip').forEach(c=>{if(c.dataset.group===g||!c.dataset.group){}});
+  // clear same group
+  el.closest('.chips').querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+  el.classList.add('sel');
+  SEL[g]=el.textContent.trim();
+}
+
+function goStep(n){
+  document.querySelectorAll('.step-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('sp'+n).classList.add('active');
+  for(let i=1;i<=4;i++){
+    const d=document.getElementById('sd'+i),l=document.getElementById('sl'+i);
+    if(i<n){d.className='step-dot done';d.textContent='✓';if(l)l.className='step-line done'}
+    else if(i===n){d.className='step-dot active';d.textContent=i;if(l)l.className='step-line'}
+    else{d.className='step-dot pending';d.textContent=i;if(l)l.className='step-line'}
+  }
+  if(n===4)buildPrompt();
+}
+
+function buildPrompt(){
+  const obj=SEL['obj']||'criar conteúdo';
+  const tom=SEL['tom']||'claro e direto';
+  const tema=document.getElementById('f-tema').value.trim()||'[defina o tema]';
+  const pub=document.getElementById('f-publico').value.trim();
+  const fmt=document.getElementById('f-formato').value.trim();
+  let p=`Você é um especialista em ${obj.toLowerCase()}.\n\nTarefa: ${obj} sobre o seguinte tema: ${tema}.`;
+  if(pub)p+=`\n\nPúblico-alvo: ${pub}.`;
+  p+=`\n\nTom da resposta: ${tom.toLowerCase()}.`;
+  if(fmt)p+=`\n\nFormato esperado: ${fmt}.`;
+  p+=`\n\nSeja direto, prático e entregue o resultado completo sem introduções desnecessárias.`;
+
+  const total=(parseInt(localStorage.getItem('iap_basic_count')||'0'))+1;
+  localStorage.setItem('iap_basic_count',total);
+  const cv=document.getElementById('cval');if(cv)cv.textContent=total;
+
+  // resultado com typewriter
+  const area=document.getElementById('result-area');
+  area.innerHTML=`<div class="result-box"><div class="result-eyebrow">Seu prompt</div><button class="copy-btn" id="cb-main" onclick="copyText('pt-main','cb-main')">COPIAR</button><div class="typing-text" id="pt-main"></div></div>`;
+  typewriterBasico('pt-main', p);
+
+  // upsell contextual (a partir do 2º)
+  let upsellHtml='';
+  if(total>=2){
+    upsellHtml=`<div class="upsell-strip"><div style="flex:1"><strong>Quer que a IA escreva por você?</strong><span>No Pro você descreve em palavras normais e recebe o prompt pronto.</span></div><button class="btn-upsell-sm" onclick="window.open('https://pay.kiwify.com.br/pOiDeGS','_blank')">Ver o Pro →</button></div>`;
+  }
+
+  // upsell por contraste — sempre após o 1º resultado
+  const proHtml=`
+    <div class="pro-preview">
+      <div class="pro-preview-title">O que você receberia no Pro</div>
+      <div class="pro-features">
+        <div class="pro-feat"><span class="feat-icon">✨</span>IA gera o prompt por você — sem formulário<span class="feat-locked">PRO</span></div>
+        <div class="pro-feat"><span class="feat-icon">🔀</span>3 variações do mesmo prompt<span class="feat-locked">PRO</span></div>
+        <div class="pro-feat"><span class="feat-icon">💡</span>Explicação de por que o prompt funciona<span class="feat-locked">PRO</span></div>
+        <div class="pro-feat"><span class="feat-icon">🖼️</span>Análise de imagem para criar prompt<span class="feat-locked">PRO</span></div>
+        <div class="pro-feat"><span class="feat-icon">🕓</span>Histórico de todos os prompts gerados<span class="feat-locked">PRO</span></div>
+      </div>
+      <button class="btn-upgrade" style="width:100%" onclick="window.open('https://pay.kiwify.com.br/pOiDeGS','_blank')">Quero o Pro →</button>
+    </div>${upsellHtml}`;
+
+  document.getElementById('pro-preview-area').innerHTML=proHtml;
+}
+
+function resetGen(){
+  SEL['obj']=SEL['tom']=undefined;
+  document.querySelectorAll('.chip').forEach(c=>c.classList.remove('sel'));
+  ['f-tema','f-publico','f-formato'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''});
+  document.getElementById('result-area').innerHTML='';
+  document.getElementById('pro-preview-area').innerHTML='';
+  document.querySelectorAll('.step-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('sp1').classList.add('active');
+  for(let i=1;i<=4;i++){const d=document.getElementById('sd'+i),l=document.getElementById('sl'+i);if(i===1){d.className='step-dot active';d.textContent='1'}else{d.className='step-dot pending';d.textContent=i;if(l)l.className='step-line'}}
+}
+
+function copyText(tid,bid){
+  const el=document.getElementById(tid);if(!el)return;
+  navigator.clipboard.writeText(el.textContent).then(()=>{
+    const btn=document.getElementById(bid);
+    if(btn){const o=btn.textContent;btn.textContent='✓ OK';btn.style.background='var(--success)';btn.style.color='#0D0D14';setTimeout(()=>{btn.textContent=o;btn.style.background='';btn.style.color=''},2000)}
+    showToast();
+  });
+}
+
+function showToast(){const t=document.getElementById('toast');t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2200)}
+
+function filterLib(el,cat){
+  document.querySelectorAll('.cat-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');renderLib(cat);
+}
+
+function renderLib(cat){
+  const grid=document.getElementById('p-grid');
+  const list=cat==='todos'?LIB:LIB.filter(p=>p.c===cat);
+  if(!list.length){grid.innerHTML='<div style="color:var(--muted);font-size:13px;padding:1rem">Nenhum prompt nesta categoria na versão Básico.</div>';return}
+  grid.innerHTML=list.map((p,i)=>`
+    <div class="p-item" id="pi${i}" onclick="toggleP(${i})">
+      <div class="p-head"><div class="p-name">${p.n}</div><div class="p-cat">${p.c}</div></div>
+      <div class="p-preview">${p.p}</div>
+      <div class="p-full" id="pf${i}">${p.t}
+        <div class="p-actions">
+          <button class="btn btn-primary btn-sm" onclick="event.stopPropagation();copyLib(${i},this)">Copiar prompt</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function toggleP(i){document.getElementById('pi'+i).classList.toggle('open')}
+function copyLib(i,btn){
+  navigator.clipboard.writeText(LIB[i].t).then(()=>{
+    const o=btn.textContent;btn.textContent='✓ Copiado!';btn.style.background='var(--success)';
+    setTimeout(()=>{btn.textContent=o;btn.style.background=''},2000);showToast();
+  });
+}
+
+renderLib('todos');
+
+// init contador
+(function(){const cv=document.getElementById('cval');if(cv)cv.textContent=localStorage.getItem('iap_basic_count')||'0'})();
+
+// ===== TYPEWRITER =====
+function typewriterBasico(id,texto){
+  const el=document.getElementById(id);if(!el)return;
+  el.textContent='';
+  const chars=[...texto];const total=chars.length;
+  const delay=total>300?0:total>150?4:8;
+  let i=0;
+  function next(){
+    if(i>=total){el.style.borderRight='none';return}
+    const chunk=delay===0?10:1;
+    el.textContent+=chars.slice(i,i+chunk).join('');
+    i+=chunk;
+    requestAnimationFrame(()=>setTimeout(next,delay));
+  }
+  next();
+}
+
+// ===== PARTÍCULAS =====
+(function(){
+  const script=document.createElement('script');
+  script.src='https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.3/p5.min.js';
+  script.onload=()=>{
+    new p5(function(s){
+      let pts=[];const N=60;
+      s.setup=function(){
+        const c=s.createCanvas(s.windowWidth,s.windowHeight);
+        c.id('particle-canvas');
+        document.getElementById('particle-canvas').remove();
+        document.body.insertBefore(c.elt,document.body.firstChild);
+        c.elt.id='particle-canvas';
+        for(let i=0;i<N;i++)pts.push({x:s.random(s.width),y:s.random(s.height),vx:s.random(-.3,.3),vy:s.random(-.3,.3),r:s.random(2,4),a:s.random(25,75)});
+      };
+      s.draw=function(){
+        s.clear();
+        for(let i=0;i<pts.length;i++){
+          for(let j=i+1;j<pts.length;j++){
+            const d=s.dist(pts[i].x,pts[i].y,pts[j].x,pts[j].y);
+            if(d<110){s.stroke(124,110,250,s.map(d,0,110,35,0));s.strokeWeight(.5);s.line(pts[i].x,pts[i].y,pts[j].x,pts[j].y)}
+          }
+        }
+        pts.forEach(p=>{
+          p.x+=p.vx;p.y+=p.vy;
+          if(p.x<0||p.x>s.width)p.vx*=-1;
+          if(p.y<0||p.y>s.height)p.vy*=-1;
+          const dx=s.mouseX-p.x,dy=s.mouseY-p.y,md=Math.sqrt(dx*dx+dy*dy);
+          if(md<160&&md>0){p.x+=dx/md*.35;p.y+=dy/md*.35}
+          s.noStroke();s.fill(124,110,250,p.a);s.ellipse(p.x,p.y,p.r,p.r);
+        });
+      };
+      s.windowResized=function(){s.resizeCanvas(s.windowWidth,s.windowHeight)};
+    });
+  };
+  document.head.appendChild(script);
+})();
+</script>
+</body>
+</html>
